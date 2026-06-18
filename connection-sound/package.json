@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@imgly/background-removal": "^1.7.0",
+    "@supabase/supabase-js": "^2.108.2",
     "@tabler/icons-react": "^3.12.0",
     "adm-zip": "^0.5.17",
     "framer-motion": "^11.3.24",

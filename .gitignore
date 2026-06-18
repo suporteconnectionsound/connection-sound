@@ -13,3 +13,6 @@ Thumbs.db
 connection-sound/resources/bin/
 connection-sound/resources/models/
 *.tsbuildinfo
+credenciais.local.md
+*.local.secret
+secrets.local*

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { IconCheck } from '@tabler/icons-react'
 import { TitleBar } from '@/components/TitleBar'
 import { Sidebar } from '@/components/Sidebar'
+import { AuthGate } from '@/components/AuthGate'
 import { Downloads } from '@/pages/Downloads'
 import { Tool } from '@/pages/Tool'
 import { RemoveBg } from '@/pages/RemoveBg'
@@ -70,10 +71,12 @@ export default function App(): JSX.Element {
       </div>
       <div className="app">
         <TitleBar />
-        <div className="body">
-          <Sidebar current={page} onNavigate={setPage} />
-          <section className="content">{renderPage()}</section>
-        </div>
+        <AuthGate>
+          <div className="body">
+            <Sidebar current={page} onNavigate={setPage} />
+            <section className="content">{renderPage()}</section>
+          </div>
+        </AuthGate>
 
         <div className="toasts">
           {toasts.map((t) => (

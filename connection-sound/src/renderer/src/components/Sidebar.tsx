@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { IconLogout } from '@tabler/icons-react'
 import { PAGES, type PageDef, type PageId } from '@/lib/pages'
+import { useAuth } from '@/lib/auth'
 
 const GROUPS: PageDef['group'][] = ['Biblioteca', 'Ferramentas', 'Conta']
 
@@ -11,6 +13,10 @@ interface Props {
 export function Sidebar({ current, onNavigate }: Props): JSX.Element {
   const navRef = useRef<HTMLElement>(null)
   const [ind, setInd] = useState({ y: 0, h: 40, visible: false })
+  const { profile, user, isPro, trialDaysLeft, signOut } = useAuth()
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Você'
+  const initials = displayName.slice(0, 2).toUpperCase()
+  const trialPct = isPro ? 100 : Math.min(100, Math.max(0, (trialDaysLeft / 3) * 100))
 
   useLayoutEffect(() => {
     const nav = navRef.current
@@ -55,19 +61,34 @@ export function Sidebar({ current, onNavigate }: Props): JSX.Element {
 
       <div className="account">
         <div className="row">
-          <div className="av">DL</div>
-          <div>
-            <div className="nm">David</div>
-            <div className="sub">12 faixas baixadas</div>
+          <div className="av">{initials}</div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="nm">{displayName}</div>
+            <div className="sub">{isPro ? 'Connection Sound Pro' : `Teste · ${trialDaysLeft} ${trialDaysLeft === 1 ? 'dia' : 'dias'}`}</div>
           </div>
+          <button className="logout" onClick={signOut} title="Sair">
+            <IconLogout size={15} />
+          </button>
         </div>
-        <div className="trialbar">
-          <i />
-        </div>
-        <div className="tt">
-          Teste termina em <b>2 dias</b>
-        </div>
-        <button className="btn-acc">Assinar Pro</button>
+        {isPro ? (
+          <div className="tt" style={{ marginTop: 8 }}>Assinatura ativa ✓</div>
+        ) : (
+          <>
+            <div className="trialbar">
+              <i style={{ width: trialPct + '%' }} />
+            </div>
+            <div className="tt">
+              {trialDaysLeft > 0 ? (
+                <>
+                  Teste termina em <b>{trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'}</b>
+                </>
+              ) : (
+                'Teste terminado'
+              )}
+            </div>
+            <button className="btn-acc">Assinar Pro</button>
+          </>
+        )}
       </div>
     </aside>
   )
