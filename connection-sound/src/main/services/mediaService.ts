@@ -247,7 +247,9 @@ export class MediaService {
 
       const inputArgs: string[] = []
       const filters: string[] = []
-      const dur = images.length > 1 ? D + T : D
+      // Folga na duração de cada input: evita o xfade cair exatamente no limite
+      // (com fotos reais a conversão de fps arredonda e cortava a 2ª imagem).
+      const dur = images.length > 1 ? D + T + 1 : D
       images.forEach((img, i) => {
         inputArgs.push('-loop', '1', '-t', String(dur), '-i', img)
         // Usa split para poder usar o stream de entrada em dois filtros diferentes
@@ -256,7 +258,7 @@ export class MediaService {
           `[${i}:v]split[sa${i}][sb${i}];` +
             `[sa${i}]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=22:2,setsar=1[bg${i}];` +
             `[sb${i}]scale=${W}:${H}:force_original_aspect_ratio=decrease,setsar=1[fg${i}];` +
-            `[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,format=yuv420p,fps=${fps},setpts=PTS-STARTPTS[v${i}]`
+            `[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,format=yuv420p,fps=${fps},settb=AVTB,setpts=PTS-STARTPTS[v${i}]`
         )
       })
 
@@ -277,7 +279,8 @@ export class MediaService {
       if (!existsSync(opts.outDir)) mkdirSync(opts.outDir, { recursive: true })
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
       const out = join(opts.outDir, `Slideshow ${stamp}.mp4`)
-      const total = images.length * D
+      // Duração final exata: cada foto D segundos + uma transição T no total.
+      const total = images.length > 1 ? images.length * D + T : D
 
       const args = [
         ...inputArgs,
@@ -285,6 +288,8 @@ export class MediaService {
         filters.join(';'),
         '-map',
         lastLabel,
+        '-t',
+        String(total),
         '-r',
         String(fps),
         '-c:v',
