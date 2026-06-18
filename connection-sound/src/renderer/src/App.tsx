@@ -14,6 +14,7 @@ import { Slideshow } from '@/pages/Slideshow'
 import { Support } from '@/pages/Support'
 import { Settings } from '@/pages/Settings'
 import { Admin } from '@/pages/Admin'
+import { Paywall } from '@/pages/Paywall'
 import { PAGES, type PageId } from '@/lib/pages'
 
 interface ToastMsg {
@@ -26,6 +27,7 @@ export default function App(): JSX.Element {
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const [updateReady, setUpdateReady] = useState(false)
   const [showTour, setShowTour] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
   const toastId = useRef(0)
   const { user, hasAccess, loading } = useAuth()
 
@@ -95,7 +97,7 @@ export default function App(): JSX.Element {
         <TitleBar />
         <AuthGate>
           <div className="body">
-            <Sidebar current={page} onNavigate={setPage} />
+            <Sidebar current={page} onNavigate={setPage} onOpenPaywall={() => setShowPaywall(true)} />
             <section className="content">{renderPage()}</section>
           </div>
         </AuthGate>
@@ -103,6 +105,8 @@ export default function App(): JSX.Element {
         {showTour && hasAccess && (
           <Tour currentPage={page} onNavigate={setPage} onClose={finishTour} />
         )}
+
+        {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
 
         {updateReady && (
           <div className="updatebar">

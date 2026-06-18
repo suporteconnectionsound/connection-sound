@@ -29,6 +29,37 @@ async function syncSubscription(subscriptionId: string, userIdHint?: string): Pr
   else await admin.from('subscriptions').update(patch).eq('stripe_customer_id', customerId)
 }
 
+// Pagamento Pix (à vista): libera acesso por N dias. Empilha se ainda houver tempo.
+async function grantOneTime(session: Stripe.Checkout.Session): Promise<void> {
+  const userId =
+    (session.client_reference_id as string | null) ?? (session.metadata?.user_id as string | undefined)
+  if (!userId) return
+  const days = parseInt((session.metadata?.access_days as string) || '30', 10)
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
+
+  // Base = a partir de agora OU do fim do período atual, o que for maior (renovação empilha).
+  const { data: cur } = await admin
+    .from('subscriptions')
+    .select('current_period_end')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const now = Date.now()
+  const existingEnd = cur?.current_period_end ? new Date(cur.current_period_end).getTime() : 0
+  const base = Math.max(now, existingEnd)
+  const end = new Date(base + days * 86400000).toISOString()
+
+  await admin
+    .from('subscriptions')
+    .update({
+      status: 'active',
+      price_id: `pix_${days}d`,
+      current_period_end: end,
+      stripe_customer_id: customerId ?? undefined,
+      updated_at: new Date().toISOString()
+    })
+    .eq('user_id', userId)
+}
+
 Deno.serve(async (req) => {
   const sig = req.headers.get('stripe-signature')
   const body = await req.text()
@@ -56,7 +87,15 @@ Deno.serve(async (req) => {
           const uid =
             (session.client_reference_id as string | null) ?? (session.metadata?.user_id as string | undefined)
           await syncSubscription(String(session.subscription), uid || undefined)
+        } else if (session.mode === 'payment' && session.payment_status === 'paid') {
+          // Pagamento único já confirmado (ex.: cartão em modo payment).
+          await grantOneTime(session)
         }
+        break
+      }
+      case 'checkout.session.async_payment_succeeded': {
+        // Pix confirma de forma assíncrona — é aqui que o pagamento Pix é aprovado.
+        await grantOneTime(event.data.object as Stripe.Checkout.Session)
         break
       }
       case 'customer.subscription.created':

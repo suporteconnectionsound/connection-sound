@@ -14,6 +14,8 @@ connection-sound/resources/bin/
 connection-sound/resources/models/
 connection-sound/resources/imgly/
 *.tsbuildinfo
+.commit-msg.tmp
+**/.commit-msg.tmp
 credenciais.local.md
 *.local.secret
 secrets.local*

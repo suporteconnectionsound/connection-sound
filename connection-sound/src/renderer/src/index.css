@@ -325,6 +325,32 @@ button{font-family:inherit}
 .pwfoot span{display:flex;align-items:center;gap:6px;cursor:pointer}
 .pwfoot span:hover{color:var(--txt)}
 
+/* Forma de pagamento (Cartão / Pix) */
+.pwmethod{display:flex;gap:10px}
+.pwmtab{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+  background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:11px 22px;
+  color:var(--txt2);font-size:13.5px;font-weight:600;transition:border-color .2s,color .2s,background .2s}
+.pwmtab svg{margin-bottom:2px}
+.pwmtab span{font-size:10.5px;font-weight:400;color:var(--txt3)}
+.pwmtab:hover{border-color:var(--line2);color:var(--txt)}
+.pwmtab.on{border-color:rgba(255,122,47,.55);color:var(--txt);background:rgba(255,122,47,.08)}
+.pwmtab.on span{color:var(--acc)}
+.pwnote{max-width:460px;text-align:center;font-size:12px;line-height:1.5;color:var(--txt3);
+  background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+
+/* Paywall como overlay (acionado pelo botão Assinar Pro durante o teste) */
+.pwoverlay{position:fixed;inset:0;z-index:4000;display:grid;place-items:center;padding:24px;
+  background:rgba(7,7,9,.74);backdrop-filter:blur(6px);animation:fadeUp .25s var(--ease)}
+.pwmodal{position:relative;width:min(680px,96vw);max-height:92vh;overflow:auto;
+  background:var(--bg2);border:1px solid var(--line2);border-radius:20px;
+  box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.pwmodal .paywall{flex:initial;padding:30px 26px;gap:18px}
+.pwmodal .pwhead h1{font-size:21px}
+.pwclose{position:absolute;top:14px;right:14px;z-index:1;width:34px;height:34px;border-radius:9px;
+  display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);color:var(--txt2);
+  cursor:pointer;transition:color .2s,border-color .2s}
+.pwclose:hover{color:var(--txt);border-color:var(--line2)}
+
 /* ===== ADMIN ===== */
 .adminpage{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:16px;animation:fadeUp .4s var(--ease)}
 .adminhead{display:flex;align-items:center;justify-content:space-between}

@@ -83,7 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   const now = Date.now()
   const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at).getTime() : 0
   const trialValid = trialEnd > now
-  const isPro = subscription?.status === 'active'
+  // Acesso pago válido enquanto status=active E o período não expirou.
+  // (assinatura no cartão mantém o período no futuro; Pix avulso expira ao fim dos dias pagos)
+  const periodEnd = subscription?.current_period_end ? new Date(subscription.current_period_end).getTime() : 0
+  const periodOk = !subscription?.current_period_end || periodEnd > now
+  const isPro = subscription?.status === 'active' && periodOk
   const hasAccess = isPro || trialValid
   const trialDaysLeft = trialValid ? Math.max(0, Math.ceil((trialEnd - now) / DAY)) : 0
 

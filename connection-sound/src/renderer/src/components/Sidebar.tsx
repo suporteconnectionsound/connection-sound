@@ -1,8 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { IconLogout, IconLoader2 } from '@tabler/icons-react'
+import { IconLogout } from '@tabler/icons-react'
 import { PAGES, type PageDef, type PageId } from '@/lib/pages'
 import { useAuth } from '@/lib/auth'
-import { startCheckout } from '@/lib/billing'
 import { ADMIN_EMAIL } from '@/lib/admin'
 
 const GROUPS: PageDef['group'][] = ['Biblioteca', 'Ferramentas', 'Conta']
@@ -10,29 +9,13 @@ const GROUPS: PageDef['group'][] = ['Biblioteca', 'Ferramentas', 'Conta']
 interface Props {
   current: PageId
   onNavigate: (id: PageId) => void
+  onOpenPaywall: () => void
 }
 
-export function Sidebar({ current, onNavigate }: Props): JSX.Element {
+export function Sidebar({ current, onNavigate, onOpenPaywall }: Props): JSX.Element {
   const navRef = useRef<HTMLElement>(null)
   const [ind, setInd] = useState({ y: 0, h: 40, visible: false })
-  const { profile, user, isPro, trialDaysLeft, signOut, refresh } = useAuth()
-  const [busy, setBusy] = useState(false)
-
-  async function assinar(): Promise<void> {
-    if (busy) return
-    setBusy(true)
-    try {
-      const r = await startCheckout('month')
-      if (r === 'success') {
-        for (let i = 0; i < 6; i++) {
-          await new Promise((res) => setTimeout(res, 1500))
-          await refresh()
-        }
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
+  const { profile, user, isPro, trialDaysLeft, signOut } = useAuth()
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Você'
   const initials = displayName.slice(0, 2).toUpperCase()
   const trialPct = isPro ? 100 : Math.min(100, Math.max(0, (trialDaysLeft / 3) * 100))
@@ -106,9 +89,7 @@ export function Sidebar({ current, onNavigate }: Props): JSX.Element {
                 'Teste terminado'
               )}
             </div>
-            <button className="btn-acc" onClick={assinar} disabled={busy}>
-              {busy ? <IconLoader2 size={15} className="spin" /> : 'Assinar Pro'}
-            </button>
+            <button className="btn-acc" onClick={onOpenPaywall}>Assinar Pro</button>
           </>
         )}
       </div>
