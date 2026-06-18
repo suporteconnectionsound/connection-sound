@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const RESEND = Deno.env.get('RESEND_API_KEY') ?? ''
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
+const OWNER_EMAIL = Deno.env.get('OWNER_NOTIFY_EMAIL') ?? 'davidlindoso43@gmail.com'
 const LOGO = Deno.env.get('BRAND_LOGO_URL') ?? 'https://vypzcjdjelsgbhlsvvpn.supabase.co/storage/v1/object/public/brand/logo.png'
 const PAY_MONTHLY = Deno.env.get('PAY_LINK_MONTHLY') ?? 'https://buy.stripe.com/dRm5kDaG45yggCCd9u0ZW00'
 const PAY_YEARLY = Deno.env.get('PAY_LINK_YEARLY') ?? 'https://buy.stripe.com/28EbJ1cOc6Ck0DEfhC0ZW01'
@@ -125,6 +126,40 @@ function render(r: Row): { subject: string; html: string } {
   }
 }
 
+// Avisa o dono quando um cliente novo se cadastra (junto do e-mail de boas-vindas).
+async function notifyOwnerSignup(name: string | null, email: string): Promise<void> {
+  if (!RESEND) return
+  const quando = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  const html = `<!doctype html><html><body style="margin:0;background:#07070b;padding:24px;font-family:Arial,Helvetica,sans-serif">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#111118;border:1px solid #23232e;border-radius:16px;overflow:hidden">
+      <tr><td style="height:4px;background:linear-gradient(90deg,#ff9248,#f25312,#111118)"></td></tr>
+      <tr><td style="padding:26px 30px;color:#e6e6ee">
+        <div style="font-size:13px;color:#ff9248;font-weight:bold;letter-spacing:.3px">CONNECTION SOUND</div>
+        <h1 style="margin:8px 0 16px;font-size:22px;color:#fff">👤 Novo cadastro</h1>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.9;color:#c9c9d4">
+          <tr><td style="color:#8a8a96;padding-right:14px">Cliente</td><td style="color:#fff">${name ? name + ' · ' : ''}${email}</td></tr>
+          <tr><td style="color:#8a8a96;padding-right:14px">Status</td><td style="color:#fff">Iniciou o teste grátis de 3 dias</td></tr>
+          <tr><td style="color:#8a8a96;padding-right:14px">Quando</td><td style="color:#fff">${quando}</td></tr>
+        </table>
+      </td></tr>
+    </table></td></tr></table></body></html>`
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Connection Sound <noreply@connectionsound.com>',
+        to: [OWNER_EMAIL],
+        subject: `👤 Novo cadastro — ${email}`,
+        html
+      })
+    })
+  } catch {
+    /* best-effort: não interrompe o envio dos e-mails */
+  }
+}
+
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -183,6 +218,8 @@ Deno.serve(async (req) => {
       await admin.from('email_events').upsert({ user_id: r.user_id, kind: r.kind }, { onConflict: 'user_id,kind' })
       sent++
       results[r.kind] = (results[r.kind] ?? 0) + 1
+      // Cadastro novo (boas-vindas enviada uma única vez) → avisa o dono.
+      if (r.kind === 'welcome') await notifyOwnerSignup(r.full_name, r.email)
     }
   }
   return new Response(JSON.stringify({ candidates: rows.length, sent, dry, byKind: results }), {
