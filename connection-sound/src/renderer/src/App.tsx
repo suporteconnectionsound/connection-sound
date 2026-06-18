@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { IconCheck, IconRefresh } from '@tabler/icons-react'
 import { TitleBar } from '@/components/TitleBar'
 import { Sidebar } from '@/components/Sidebar'
@@ -6,7 +6,6 @@ import { AuthGate } from '@/components/AuthGate'
 import { Tour } from '@/components/Tour'
 import { useAuth } from '@/lib/auth'
 import { Downloads } from '@/pages/Downloads'
-import { Tool } from '@/pages/Tool'
 import { RemoveBg } from '@/pages/RemoveBg'
 import { Converter } from '@/pages/Converter'
 import { Compressor } from '@/pages/Compressor'
@@ -15,11 +14,20 @@ import { Support } from '@/pages/Support'
 import { Settings } from '@/pages/Settings'
 import { Admin } from '@/pages/Admin'
 import { Paywall } from '@/pages/Paywall'
-import { PAGES, type PageId } from '@/lib/pages'
+import type { PageId } from '@/lib/pages'
 
 interface ToastMsg {
   id: number
   name: string
+}
+
+// Mantém a página montada (só esconde) para o estado não se perder ao trocar de aba.
+function PageBox({ show, children }: { show: boolean; children: ReactNode }): JSX.Element {
+  return (
+    <div className="pagebox" style={{ display: show ? 'flex' : 'none' }}>
+      {children}
+    </div>
+  )
 }
 
 export default function App(): JSX.Element {
@@ -62,31 +70,6 @@ export default function App(): JSX.Element {
     }
   }, [])
 
-  const current = PAGES.find((p) => p.id === page) as (typeof PAGES)[number]
-
-  function renderPage(): JSX.Element {
-    switch (page) {
-      case 'downloads':
-        return <Downloads onToast={pushToast} />
-      case 'bg':
-        return <RemoveBg />
-      case 'conv':
-        return <Converter />
-      case 'comp':
-        return <Compressor />
-      case 'slide':
-        return <Slideshow />
-      case 'sup':
-        return <Support />
-      case 'set':
-        return <Settings />
-      case 'admin':
-        return <Admin />
-      default:
-        return <Tool page={current} />
-    }
-  }
-
   return (
     <>
       <div className="aurora">
@@ -98,7 +81,27 @@ export default function App(): JSX.Element {
         <AuthGate>
           <div className="body">
             <Sidebar current={page} onNavigate={setPage} onOpenPaywall={() => setShowPaywall(true)} />
-            <section className="content">{renderPage()}</section>
+            <section className="content">
+              {/* Ferramentas ficam montadas: o que você fez fica salvo até fechar o app */}
+              <PageBox show={page === 'downloads'}>
+                <Downloads onToast={pushToast} />
+              </PageBox>
+              <PageBox show={page === 'bg'}>
+                <RemoveBg />
+              </PageBox>
+              <PageBox show={page === 'conv'}>
+                <Converter />
+              </PageBox>
+              <PageBox show={page === 'comp'}>
+                <Compressor />
+              </PageBox>
+              <PageBox show={page === 'slide'}>
+                <Slideshow />
+              </PageBox>
+              {page === 'set' && <Settings />}
+              {page === 'sup' && <Support />}
+              {page === 'admin' && <Admin />}
+            </section>
           </div>
         </AuthGate>
 

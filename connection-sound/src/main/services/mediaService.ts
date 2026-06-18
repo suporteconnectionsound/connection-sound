@@ -256,7 +256,7 @@ export class MediaService {
           `[${i}:v]split[sa${i}][sb${i}];` +
             `[sa${i}]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=22:2,setsar=1[bg${i}];` +
             `[sb${i}]scale=${W}:${H}:force_original_aspect_ratio=decrease,setsar=1[fg${i}];` +
-            `[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,format=yuv420p,fps=${fps}[v${i}]`
+            `[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,format=yuv420p,fps=${fps},setpts=PTS-STARTPTS[v${i}]`
         )
       })
 
@@ -264,9 +264,9 @@ export class MediaService {
       if (images.length > 1) {
         for (let k = 1; k < images.length; k++) {
           const outL = k === images.length - 1 ? '[vout]' : `[x${k}]`
-          // Offset correto para xfades encadeados: cada imagem aparece D segundos antes da transição.
-          // Para k>1 precisa compensar os T segundos sobrepostos das transições anteriores.
-          const offset = D * k + T * (k - 1)
+          // Offset dos xfades encadeados: cada entrada tem duração D+T, e a k-ésima
+          // transição começa em k*D (fórmula padrão). Total = N*D + T.
+          const offset = D * k
           filters.push(`${lastLabel}[v${k}]xfade=transition=${transition}:duration=${T}:offset=${offset}${outL}`)
           lastLabel = outL
         }

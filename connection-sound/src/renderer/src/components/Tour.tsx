@@ -132,8 +132,9 @@ export function Tour({ currentPage, onNavigate, onClose }: Props): JSX.Element {
     let stopped = false
     const tick = (): void => {
       if (stopped) return
-      const el = document.querySelector(selector)
-      if (el) {
+      // Pode haver vários elementos iguais montados (páginas ocultas); pega o VISÍVEL.
+      const els = Array.from(document.querySelectorAll(selector))
+      for (const el of els) {
         const r = el.getBoundingClientRect()
         if (r.width > 0 && r.height > 0) {
           setRect({ top: r.top, left: r.left, width: r.width, height: r.height })

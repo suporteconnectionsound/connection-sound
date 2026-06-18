@@ -82,6 +82,7 @@ button{font-family:inherit}
 .btn-acc:hover{filter:brightness(1.08)}.btn-acc:active{transform:scale(.97)}
 
 .content{flex:1;display:flex;flex-direction:column;min-width:0}
+.pagebox{flex:1;min-height:0;flex-direction:column}
 .topbar{padding:18px 22px 14px;border-bottom:1px solid var(--line)}
 .searchrow{display:flex;gap:10px}
 .search{flex:1;display:flex;align-items:center;gap:11px;height:46px;padding:0 15px;border-radius:13px;
