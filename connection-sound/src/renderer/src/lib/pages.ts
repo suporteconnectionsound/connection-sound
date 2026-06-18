@@ -6,6 +6,7 @@ import {
   IconPhoto,
   IconSettings,
   IconHeadphones,
+  IconShieldLock,
   type Icon
 } from '@tabler/icons-react'
 
@@ -17,6 +18,7 @@ export type PageId =
   | 'slide'
   | 'set'
   | 'sup'
+  | 'admin'
 
 export interface PageDef {
   id: PageId
@@ -83,5 +85,13 @@ export const PAGES: PageDef[] = [
     group: 'Conta',
     title: 'Suporte',
     desc: 'WhatsApp (61) 99243-7695 · suporteconnectionsound@gmail.com'
+  },
+  {
+    id: 'admin',
+    label: 'Admin',
+    icon: IconShieldLock,
+    group: 'Conta',
+    title: 'Painel Admin',
+    desc: ''
   }
 ]

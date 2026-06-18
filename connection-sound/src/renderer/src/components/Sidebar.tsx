@@ -3,6 +3,7 @@ import { IconLogout } from '@tabler/icons-react'
 import { PAGES, type PageDef, type PageId } from '@/lib/pages'
 import { useAuth } from '@/lib/auth'
 import { startCheckout } from '@/lib/billing'
+import { ADMIN_EMAIL } from '@/lib/admin'
 
 const GROUPS: PageDef['group'][] = ['Biblioteca', 'Ferramentas', 'Conta']
 
@@ -28,6 +29,7 @@ export function Sidebar({ current, onNavigate }: Props): JSX.Element {
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Você'
   const initials = displayName.slice(0, 2).toUpperCase()
   const trialPct = isPro ? 100 : Math.min(100, Math.max(0, (trialDaysLeft / 3) * 100))
+  const isAdmin = (user?.email ?? '').toLowerCase() === ADMIN_EMAIL
 
   useLayoutEffect(() => {
     const nav = navRef.current
@@ -52,7 +54,7 @@ export function Sidebar({ current, onNavigate }: Props): JSX.Element {
         {GROUPS.map((group) => (
           <div className="navgroup" key={group}>
             <div className="lbl">{group}</div>
-            {PAGES.filter((p) => p.group === group).map((p) => {
+            {PAGES.filter((p) => p.group === group && (p.id !== 'admin' || isAdmin)).map((p) => {
               const Icon = p.icon
               return (
                 <a

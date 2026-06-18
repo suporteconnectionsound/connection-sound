@@ -11,6 +11,7 @@ import { Compressor } from '@/pages/Compressor'
 import { Slideshow } from '@/pages/Slideshow'
 import { Support } from '@/pages/Support'
 import { Settings } from '@/pages/Settings'
+import { Admin } from '@/pages/Admin'
 import { PAGES, type PageId } from '@/lib/pages'
 
 interface ToastMsg {
@@ -58,6 +59,8 @@ export default function App(): JSX.Element {
         return <Support />
       case 'set':
         return <Settings />
+      case 'admin':
+        return <Admin />
       default:
         return <Tool page={current} />
     }

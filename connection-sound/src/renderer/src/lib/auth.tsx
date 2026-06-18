@@ -43,20 +43,41 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (data.session?.user) await loadData(data.session.user.id)
-      setLoading(false)
-    })
+    let mounted = true
+    const finish = (): void => {
+      if (mounted) setLoading(false)
+    }
+    // rede de segurança: nunca prende no splash
+    const safety = setTimeout(finish, 8000)
+
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        if (!mounted) return
+        setSession(data.session)
+        if (data.session?.user) await loadData(data.session.user.id).catch(() => {})
+        finish()
+        clearTimeout(safety)
+      })
+      .catch(() => {
+        finish()
+        clearTimeout(safety)
+      })
+
     const { data: listener } = supabase.auth.onAuthStateChange(async (_e, s) => {
       setSession(s)
-      if (s?.user) await loadData(s.user.id)
+      if (s?.user) await loadData(s.user.id).catch(() => {})
       else {
         setProfile(null)
         setSubscription(null)
       }
+      finish()
     })
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      mounted = false
+      clearTimeout(safety)
+      listener.subscription.unsubscribe()
+    }
   }, [loadData])
 
   const now = Date.now()
