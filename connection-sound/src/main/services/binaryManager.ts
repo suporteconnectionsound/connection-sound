@@ -23,7 +23,14 @@ function pick(fileName: string, fallback: string): string {
 export const tools = {
   ytdlp: pick('yt-dlp.exe', 'yt-dlp'),
   ffmpeg: pick('ffmpeg.exe', 'ffmpeg'),
-  ffprobe: pick('ffprobe.exe', 'ffprobe')
+  ffprobe: pick('ffprobe.exe', 'ffprobe'),
+  aria2c: pick('aria2c.exe', 'aria2c')
+}
+
+/** Caminho do aria2c se estiver disponível (download multi-conexão, bem mais rápido). */
+export function aria2cPath(): string | null {
+  const p = join(binDir(), 'aria2c.exe')
+  return existsSync(p) ? p : null
 }
 
 /** Caminho da pasta do ffmpeg empacotado, se existir (para passar ao yt-dlp). */

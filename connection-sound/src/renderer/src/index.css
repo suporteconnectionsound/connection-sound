@@ -255,3 +255,21 @@ button{font-family:inherit}
 .empty b{color:var(--txt);font-weight:500}
 .pctbox{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}
 .spd{font-family:var(--mono);font-size:10.5px;color:var(--txt3);font-variant-numeric:tabular-nums}
+
+.mediapage{flex:1;display:flex;flex-direction:column;min-height:0;padding:22px;gap:16px;overflow-y:auto;animation:fadeUp .5s var(--ease)}
+.mhead h2{font-size:18px;font-weight:600}
+.mhead p{font-size:13px;color:var(--txt2);margin-top:4px;max-width:560px;line-height:1.5}
+.mediapage .dropzone{width:100%;min-height:160px;cursor:pointer}
+.dropzone.over{border-color:rgba(255,122,47,.6);background:var(--glass2)}
+.dropzone h2{font-size:16px;font-weight:600}
+.dropzone p{font-size:12.5px;color:var(--txt2);max-width:360px;line-height:1.5}
+.mbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.mcount{font-size:12px;color:var(--txt2);font-weight:500}
+.tlabel{display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px}
+.tsel{background:#15151a;border:1px solid var(--line);border-radius:9px;color:var(--txt);font-size:13px;padding:8px 10px;font-family:inherit;cursor:pointer;outline:none}
+.tsel:focus{border-color:rgba(255,122,47,.5)}
+.mbar .dzbtn{margin-left:auto}
+.mresults{display:flex;flex-direction:column;gap:9px}
+.cover.checker{overflow:hidden;display:grid;place-items:center;background-color:#15151b;
+  background-image:linear-gradient(45deg,#2a2a33 25%,transparent 25%),linear-gradient(-45deg,#2a2a33 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2a33 75%),linear-gradient(-45deg,transparent 75%,#2a2a33 75%);
+  background-size:12px 12px;background-position:0 0,0 6px,6px -6px,-6px 0}

@@ -1,11 +1,14 @@
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
-import { join } from 'path'
+import { join, dirname, basename, extname } from 'path'
+import { readFileSync, writeFileSync } from 'fs'
 import { DownloadService, type EnqueuePayload } from './services/downloadService'
+import { MediaService } from './services/mediaService'
 import { checkTools } from './services/binaryManager'
 
 const isDev = !app.isPackaged
 let mainWindow: BrowserWindow | null = null
 let downloads: DownloadService | null = null
+let media: MediaService | null = null
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -74,6 +77,40 @@ app.whenReady().then(() => {
     return r.filePaths[0]
   })
   ipcMain.handle('tools:check', () => checkTools())
+
+  media = new MediaService((payload) => {
+    mainWindow?.webContents.send('media:event', payload)
+  })
+  ipcMain.handle('media:convert', (_e, d: { files: string[]; target: string }) => media?.convert(d.files, d.target))
+  ipcMain.handle('media:compress', (_e, d: { files: string[]; level: 'leve' | 'medio' | 'forte' }) =>
+    media?.compress(d.files, d.level)
+  )
+  ipcMain.handle('media:slideshow', (_e, d: { inputs: string[]; resolution: string; perPhoto: number; transition: string }) =>
+    media?.slideshow(d.inputs, {
+      resolution: d.resolution,
+      perPhoto: d.perPhoto,
+      transition: d.transition,
+      outDir: defaultDir
+    })
+  )
+  ipcMain.handle('dialog:pickFiles', async (_e, filters?: { name: string; extensions: string[] }[]) => {
+    if (!mainWindow) return []
+    const r = await dialog.showOpenDialog(mainWindow, { properties: ['openFile', 'multiSelections'], filters })
+    return r.canceled ? [] : r.filePaths
+  })
+  ipcMain.on('shell:openPath', (_e, p: unknown) => {
+    if (typeof p === 'string') shell.openPath(p)
+  })
+  ipcMain.on('shell:showItem', (_e, p: unknown) => {
+    if (typeof p === 'string') shell.showItemInFolder(p)
+  })
+
+  ipcMain.handle('file:read', (_e, p: string) => readFileSync(p))
+  ipcMain.handle('bg:save', (_e, d: { src: string; bytes: Uint8Array }) => {
+    const out = join(dirname(d.src), `${basename(d.src, extname(d.src))} (sem fundo).png`)
+    writeFileSync(out, Buffer.from(d.bytes))
+    return out
+  })
 
   createWindow()
   app.on('activate', () => {
