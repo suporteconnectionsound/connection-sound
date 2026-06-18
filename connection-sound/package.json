@@ -1,6 +1,6 @@
 {
   "name": "connection-sound",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connection Sound — kit de mídia desktop",
   "author": "Connection Sound",
   "main": "./out/main/index.js",

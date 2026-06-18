@@ -74,8 +74,17 @@ export class MediaService {
           }
         }
       })
-      proc.on('error', reject)
-      proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(err.slice(-500)))))
+      proc.on('error', (e) => reject(new Error(`ffmpeg não encontrado: ${e.message}`)))
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve()
+        } else {
+          // Extrai a última linha de erro útil do stderr para diagnóstico
+          const lines = err.split('\n').map((l) => l.trim()).filter(Boolean)
+          const lastErr = lines.reverse().find((l) => /error|invalid|failed|unable|cannot|no such/i.test(l))
+          reject(new Error(lastErr || err.slice(-300) || 'erro desconhecido'))
+        }
+      })
     })
   }
 
@@ -109,15 +118,15 @@ export class MediaService {
         this.emit(item)
       } catch (e) {
         item.state = 'error'
-        item.reason = 'Falha ao converter'
+        item.reason = e instanceof Error ? e.message.slice(0, 200) : 'Falha ao converter'
         this.emit(item)
-        void e
       }
     }
   }
 
   private convertArgs(input: string, target: string, out: string): string[] {
     const t = target.toLowerCase()
+    const cat = category(input)
     const a = ['-i', input]
     if (['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'opus'].includes(t)) {
       a.push('-vn')
@@ -127,13 +136,21 @@ export class MediaService {
       else if (t === 'opus' || t === 'ogg') a.push('-c:a', 'libopus', '-b:a', '192k')
       else a.push('-c:a', 'aac', '-b:a', '256k')
     } else if (['mp4', 'mkv', 'mov'].includes(t)) {
-      a.push('-c:v', 'libx264', '-crf', '20', '-preset', 'veryfast', '-threads', '0', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p')
+      if (cat === 'audio') {
+        // áudio → container de vídeo: cria tela preta com o áudio
+        a.push('-f', 'lavfi', '-i', 'color=c=black:s=1280x720:r=30', '-shortest')
+        a.push('-c:v', 'libx264', '-crf', '28', '-preset', 'veryfast', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p')
+      } else {
+        a.push('-c:v', 'libx264', '-crf', '20', '-preset', 'veryfast', '-threads', '0', '-c:a', 'aac', '-b:a', '192k', '-pix_fmt', 'yuv420p')
+      }
     } else if (t === 'webm') {
       a.push('-c:v', 'libvpx-vp9', '-crf', '32', '-b:v', '0', '-row-mt', '1', '-cpu-used', '5', '-c:a', 'libopus')
     } else if (['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(t)) {
-      if (t === 'png') a.push('-compression_level', '100')
+      if (cat === 'video' || cat === 'audio') a.push('-frames:v', '1')
+      if (t === 'png') a.push('-compression_level', '6')
       else if (t === 'jpg' || t === 'jpeg') a.push('-q:v', '2')
-      else if (t === 'webp') a.push('-quality', '90')
+      else if (t === 'webp') a.push('-c:v', 'libwebp', '-quality', '90')
+      else if (t === 'bmp') a.push('-pix_fmt', 'bgr24')
     }
     a.push(out)
     return a
@@ -155,9 +172,14 @@ export class MediaService {
         let total = 0
         if (cat === 'video') {
           total = await this.probeDuration(file)
+          // Tenta H.265; se falhar (codec ausente), cai para H.264 que é mais compatível
           args = ['-i', file, '-c:v', 'libx265', '-crf', String(crf), '-preset', 'fast', '-c:a', 'aac', '-b:a', '128k', '-tag:v', 'hvc1', out]
         } else if (cat === 'image') {
-          args = e === '.png' ? ['-i', file, '-compression_level', '100', out] : ['-i', file, '-q:v', String(level === 'forte' ? 8 : 4), out]
+          if (e === '.png') {
+            args = ['-i', file, '-compression_level', '6', out]
+          } else {
+            args = ['-i', file, '-q:v', String(level === 'forte' ? 8 : 4), out]
+          }
         } else if (cat === 'audio') {
           args = ['-i', file, '-c:a', 'libmp3lame', '-b:a', level === 'forte' ? '128k' : '192k', out]
         } else {
@@ -172,9 +194,8 @@ export class MediaService {
         this.emit(item)
       } catch (e) {
         item.state = 'error'
-        item.reason = 'Falha ao comprimir'
+        item.reason = e instanceof Error ? e.message.slice(0, 200) : 'Falha ao comprimir'
         this.emit(item)
-        void e
       }
     }
   }
@@ -203,7 +224,9 @@ export class MediaService {
         imgs.push(p)
       }
     }
-    return imgs.sort((a, b) => basename(a).localeCompare(basename(b), undefined, { numeric: true }))
+    return imgs
+      .sort((a, b) => basename(a).localeCompare(basename(b), undefined, { numeric: true }))
+      .slice(0, 100) // limite de segurança: máximo 100 imagens por slideshow
   }
 
   async slideshow(
@@ -224,11 +247,15 @@ export class MediaService {
 
       const inputArgs: string[] = []
       const filters: string[] = []
+      const dur = images.length > 1 ? D + T : D
       images.forEach((img, i) => {
-        inputArgs.push('-loop', '1', '-t', String(D + T), '-i', img)
+        inputArgs.push('-loop', '1', '-t', String(dur), '-i', img)
+        // Usa split para poder usar o stream de entrada em dois filtros diferentes
+        // (sem split, ffmpeg retorna erro "Input link already used by some other filter")
         filters.push(
-          `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=22:2,setsar=1[bg${i}];` +
-            `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,setsar=1[fg${i}];` +
+          `[${i}:v]split[sa${i}][sb${i}];` +
+            `[sa${i}]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},boxblur=22:2,setsar=1[bg${i}];` +
+            `[sb${i}]scale=${W}:${H}:force_original_aspect_ratio=decrease,setsar=1[fg${i}];` +
             `[bg${i}][fg${i}]overlay=(W-w)/2:(H-h)/2,format=yuv420p,fps=${fps}[v${i}]`
         )
       })
@@ -237,7 +264,10 @@ export class MediaService {
       if (images.length > 1) {
         for (let k = 1; k < images.length; k++) {
           const outL = k === images.length - 1 ? '[vout]' : `[x${k}]`
-          filters.push(`${lastLabel}[v${k}]xfade=transition=${transition}:duration=${T}:offset=${D * k}${outL}`)
+          // Offset correto para xfades encadeados: cada imagem aparece D segundos antes da transição.
+          // Para k>1 precisa compensar os T segundos sobrepostos das transições anteriores.
+          const offset = D * k + T * (k - 1)
+          filters.push(`${lastLabel}[v${k}]xfade=transition=${transition}:duration=${T}:offset=${offset}${outL}`)
           lastLabel = outL
         }
       } else {
@@ -274,9 +304,8 @@ export class MediaService {
       this.emit(item)
     } catch (e) {
       item.state = 'error'
-      item.reason = 'Falha ao gerar slideshow'
+      item.reason = e instanceof Error ? e.message.slice(0, 200) : 'Falha ao gerar slideshow'
       this.emit(item)
-      void e
     }
   }
 }

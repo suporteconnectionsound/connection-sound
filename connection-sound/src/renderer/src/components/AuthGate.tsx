@@ -4,8 +4,13 @@ import { useAuth } from '@/lib/auth'
 import { Login } from '@/pages/Login'
 import { Paywall } from '@/pages/Paywall'
 
+// Em modo dev (npm run dev) pula a autenticação para facilitar testes locais.
+const DEV_SKIP = import.meta.env.DEV
+
 export function AuthGate({ children }: { children: ReactNode }): JSX.Element {
   const { loading, session, hasAccess } = useAuth()
+
+  if (DEV_SKIP) return <>{children}</>
 
   if (loading) {
     return (
