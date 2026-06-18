@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs'
 import { DownloadService, type EnqueuePayload } from './services/downloadService'
 import { MediaService } from './services/mediaService'
 import { checkTools } from './services/binaryManager'
+import { autoUpdater } from 'electron-updater'
 
 const isDev = !app.isPackaged
 let mainWindow: BrowserWindow | null = null
@@ -157,7 +158,15 @@ app.whenReady().then(() => {
     })
   })
 
+  ipcMain.on('update:install', () => autoUpdater.quitAndInstall())
+
   createWindow()
+
+  if (!isDev) {
+    autoUpdater.on('update-downloaded', () => mainWindow?.webContents.send('update:downloaded'))
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

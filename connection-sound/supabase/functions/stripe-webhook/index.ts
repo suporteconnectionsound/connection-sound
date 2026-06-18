@@ -52,7 +52,10 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         if (session.subscription) {
-          await syncSubscription(String(session.subscription), session.metadata?.user_id as string | undefined)
+          // Checkout embutido envia user_id em metadata; Payment Link (e-mails) envia em client_reference_id.
+          const uid =
+            (session.client_reference_id as string | null) ?? (session.metadata?.user_id as string | undefined)
+          await syncSubscription(String(session.subscription), uid || undefined)
         }
         break
       }

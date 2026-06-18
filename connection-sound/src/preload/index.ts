@@ -13,6 +13,12 @@ const api = {
   readFile: (path: string): Promise<Uint8Array> => ipcRenderer.invoke('file:read', path),
   bgSave: (src: string, bytes: Uint8Array): Promise<string> => ipcRenderer.invoke('bg:save', { src, bytes }),
   openCheckout: (url: string): Promise<string> => ipcRenderer.invoke('billing:checkout', url),
+  installUpdate: (): void => ipcRenderer.send('update:install'),
+  onUpdateDownloaded: (cb: () => void): (() => void) => {
+    const l = (): void => cb()
+    ipcRenderer.on('update:downloaded', l)
+    return () => ipcRenderer.removeListener('update:downloaded', l)
+  },
 
   download: {
     enqueue: (payload: { input: string; format: string; quality: string; choreo?: string }): Promise<void> =>

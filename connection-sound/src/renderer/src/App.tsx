@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { IconCheck } from '@tabler/icons-react'
+import { IconCheck, IconRefresh } from '@tabler/icons-react'
 import { TitleBar } from '@/components/TitleBar'
 import { Sidebar } from '@/components/Sidebar'
 import { AuthGate } from '@/components/AuthGate'
@@ -22,7 +22,10 @@ interface ToastMsg {
 export default function App(): JSX.Element {
   const [page, setPage] = useState<PageId>('downloads')
   const [toasts, setToasts] = useState<ToastMsg[]>([])
+  const [updateReady, setUpdateReady] = useState(false)
   const toastId = useRef(0)
+
+  useEffect(() => window.cs.onUpdateDownloaded(() => setUpdateReady(true)), [])
 
   const pushToast = useCallback((name: string) => {
     const id = toastId.current++
@@ -80,6 +83,15 @@ export default function App(): JSX.Element {
             <section className="content">{renderPage()}</section>
           </div>
         </AuthGate>
+
+        {updateReady && (
+          <div className="updatebar">
+            <span>
+              <IconRefresh size={15} /> Atualização pronta
+            </span>
+            <button onClick={() => window.cs.installUpdate()}>Reiniciar agora</button>
+          </div>
+        )}
 
         <div className="toasts">
           {toasts.map((t) => (
