@@ -16,3 +16,5 @@ connection-sound/resources/models/
 credenciais.local.md
 *.local.secret
 secrets.local*
+connection-sound/supabase/.temp/
+connection-sound/supabase/.branches/

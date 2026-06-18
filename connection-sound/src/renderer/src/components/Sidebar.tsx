@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { IconLogout } from '@tabler/icons-react'
 import { PAGES, type PageDef, type PageId } from '@/lib/pages'
 import { useAuth } from '@/lib/auth'
+import { startCheckout } from '@/lib/billing'
 
 const GROUPS: PageDef['group'][] = ['Biblioteca', 'Ferramentas', 'Conta']
 
@@ -13,7 +14,17 @@ interface Props {
 export function Sidebar({ current, onNavigate }: Props): JSX.Element {
   const navRef = useRef<HTMLElement>(null)
   const [ind, setInd] = useState({ y: 0, h: 40, visible: false })
-  const { profile, user, isPro, trialDaysLeft, signOut } = useAuth()
+  const { profile, user, isPro, trialDaysLeft, signOut, refresh } = useAuth()
+
+  async function assinar(): Promise<void> {
+    const r = await startCheckout('month')
+    if (r === 'success') {
+      for (let i = 0; i < 6; i++) {
+        await new Promise((res) => setTimeout(res, 1500))
+        await refresh()
+      }
+    }
+  }
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Você'
   const initials = displayName.slice(0, 2).toUpperCase()
   const trialPct = isPro ? 100 : Math.min(100, Math.max(0, (trialDaysLeft / 3) * 100))
@@ -86,7 +97,7 @@ export function Sidebar({ current, onNavigate }: Props): JSX.Element {
                 'Teste terminado'
               )}
             </div>
-            <button className="btn-acc">Assinar Pro</button>
+            <button className="btn-acc" onClick={assinar}>Assinar Pro</button>
           </>
         )}
       </div>

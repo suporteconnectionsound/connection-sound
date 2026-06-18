@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { IconCheck, IconLoader2, IconRefresh, IconLogout } from '@tabler/icons-react'
 import { useAuth } from '@/lib/auth'
+import { startCheckout } from '@/lib/billing'
 
 export function Paywall(): JSX.Element {
   const { signOut, refresh, user } = useAuth()
@@ -10,11 +11,17 @@ export function Paywall(): JSX.Element {
   async function assinar(plan: 'month' | 'year'): Promise<void> {
     setBusy(plan)
     setMsg('')
-    // Fase 5 (próximo passo): abrir o checkout embutido da Stripe via Edge Function.
-    setTimeout(() => {
-      setBusy(null)
-      setMsg('O checkout embutido entra no próximo passo (webhook + Edge Function). As chaves e os preços já estão prontos.')
-    }, 900)
+    const r = await startCheckout(plan)
+    if (r === 'success') {
+      setMsg('Pagamento recebido! Ativando sua assinatura…')
+      for (let i = 0; i < 6; i++) {
+        await new Promise((res) => setTimeout(res, 1500))
+        await refresh()
+      }
+    } else if (r === 'error') {
+      setMsg('Não consegui abrir o checkout agora. Tente de novo em instantes.')
+    }
+    setBusy(null)
   }
 
   return (

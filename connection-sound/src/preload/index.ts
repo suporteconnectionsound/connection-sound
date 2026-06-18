@@ -12,6 +12,7 @@ const api = {
     ipcRenderer.invoke('dialog:pickFiles', filters),
   readFile: (path: string): Promise<Uint8Array> => ipcRenderer.invoke('file:read', path),
   bgSave: (src: string, bytes: Uint8Array): Promise<string> => ipcRenderer.invoke('bg:save', { src, bytes }),
+  openCheckout: (url: string): Promise<string> => ipcRenderer.invoke('billing:checkout', url),
 
   download: {
     enqueue: (payload: { input: string; format: string; quality: string; choreo?: string }): Promise<void> =>

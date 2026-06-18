@@ -1,0 +1,5 @@
+project_id = "vypzcjdjelsgbhlsvvpn"
+
+# O webhook da Stripe não envia JWT do Supabase — desliga a verificação só nele.
+[functions.stripe-webhook]
+verify_jwt = false

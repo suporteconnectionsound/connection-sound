@@ -16,6 +16,7 @@ declare global {
       pickFiles: (filters?: { name: string; extensions: string[] }[]) => Promise<string[]>
       readFile: (path: string) => Promise<Uint8Array>
       bgSave: (src: string, bytes: Uint8Array) => Promise<string>
+      openCheckout: (url: string) => Promise<string>
       download: {
         enqueue: (payload: { input: string; format: string; quality: string; choreo?: string }) => Promise<void>
         control: (id: string, action: 'pause' | 'resume' | 'cancel' | 'retry') => void

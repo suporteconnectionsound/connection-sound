@@ -112,6 +112,51 @@ app.whenReady().then(() => {
     return out
   })
 
+  // Checkout da Stripe numa janela embutida (sem navegador externo).
+  ipcMain.handle('billing:checkout', (_e, url: unknown) => {
+    if (!mainWindow || typeof url !== 'string' || !/^https:\/\//i.test(url)) return Promise.resolve('error')
+    return new Promise<string>((resolve) => {
+      const win = new BrowserWindow({
+        width: 480,
+        height: 760,
+        parent: mainWindow ?? undefined,
+        modal: true,
+        show: false,
+        title: 'Pagamento — Connection Sound',
+        backgroundColor: '#0b0b0e',
+        autoHideMenuBar: true,
+        webPreferences: { sandbox: true }
+      })
+      let done = false
+      const finish = (result: string): void => {
+        if (done) return
+        done = true
+        resolve(result)
+        if (!win.isDestroyed()) win.close()
+      }
+      const inspect = (u: string): void => {
+        if (u.includes('cs-success')) finish('success')
+        else if (u.includes('cs-cancel')) finish('cancel')
+      }
+      win.webContents.on('will-redirect', (e, u) => {
+        if (u.includes('cs-success') || u.includes('cs-cancel')) e.preventDefault()
+        inspect(u)
+      })
+      win.webContents.on('will-navigate', (e, u) => {
+        if (u.includes('cs-success') || u.includes('cs-cancel')) e.preventDefault()
+        inspect(u)
+      })
+      win.on('closed', () => {
+        if (!done) {
+          done = true
+          resolve('closed')
+        }
+      })
+      win.once('ready-to-show', () => win.show())
+      win.loadURL(url)
+    })
+  })
+
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
