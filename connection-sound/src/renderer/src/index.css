@@ -387,3 +387,42 @@ button{font-family:inherit}
 .toolstatus{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;flex-shrink:0}
 .toolstatus.ok{background:rgba(52,211,153,.14);color:#34d399}
 .toolstatus.er{background:var(--redT);color:#f0b3ae}
+
+/* ── Guia de primeiro uso (tour) ─────────────────────────────── */
+.tour-root{position:fixed;inset:0;z-index:5000;pointer-events:none}
+.tour-catch{position:fixed;inset:0;pointer-events:auto;transition:background .3s var(--ease)}
+.tour-spot{position:fixed;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(7,7,9,.80), 0 0 0 2px var(--acc), 0 0 26px 6px rgba(255,122,47,.45);
+  transition:top .38s var(--ease),left .38s var(--ease),width .38s var(--ease),height .38s var(--ease);
+  animation:tourpulse 2.1s ease-in-out infinite}
+@keyframes tourpulse{0%,100%{box-shadow:0 0 0 9999px rgba(7,7,9,.80), 0 0 0 2px var(--acc), 0 0 22px 4px rgba(255,122,47,.35)}
+  50%{box-shadow:0 0 0 9999px rgba(7,7,9,.80), 0 0 0 2px var(--acc), 0 0 30px 9px rgba(255,122,47,.6)}}
+.tour-card{position:fixed;pointer-events:auto;background:var(--glass2);backdrop-filter:blur(22px);
+  border:1px solid var(--line2);border-radius:16px;padding:18px 18px 14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.05) inset;z-index:5001}
+.tour-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.tour-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--acc);
+  background:rgba(255,122,47,.12);border:1px solid rgba(255,122,47,.25);padding:4px 9px;border-radius:99px}
+.tour-skip{display:inline-flex;align-items:center;gap:3px;background:none;border:none;cursor:pointer;
+  color:var(--txt3);font-size:12px;transition:color .2s}
+.tour-skip:hover{color:var(--txt)}
+.tour-title{font-size:16.5px;font-weight:650;color:var(--txt);margin:0 0 6px;letter-spacing:-.01em}
+.tour-body{font-size:13px;line-height:1.6;color:var(--txt2);margin:0 0 15px}
+.tour-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tour-dots{display:flex;align-items:center;gap:5px}
+.tour-dots i{width:6px;height:6px;border-radius:99px;background:var(--line2);transition:all .3s var(--ease)}
+.tour-dots i.on{width:18px;background:var(--acc)}
+.tour-dots i.done{background:rgba(255,122,47,.45)}
+.tour-btns{display:flex;align-items:center;gap:8px}
+.tour-btn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;cursor:pointer;
+  padding:8px 13px;border-radius:9px;border:1px solid var(--line);transition:transform .15s var(--ease),filter .2s,background .2s}
+.tour-btn:hover{transform:translateY(-1px)}
+.tour-btn.ghost{background:var(--glass);color:var(--txt2)}
+.tour-btn.ghost:hover{color:var(--txt);border-color:var(--line2)}
+.tour-btn.primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent}
+.tour-btn.primary:hover{filter:brightness(1.07)}
+.tour-step{position:absolute;top:-20px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--txt3);pointer-events:none}
+.tour-card.center{text-align:center}
+.tour-card.center .tour-card-head{justify-content:flex-end}
+.tour-card.center .tour-foot{justify-content:center}
+.tour-card.center .tour-badge{display:none}

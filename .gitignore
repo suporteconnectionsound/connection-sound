@@ -12,6 +12,7 @@ build/
 Thumbs.db
 connection-sound/resources/bin/
 connection-sound/resources/models/
+connection-sound/resources/imgly/
 *.tsbuildinfo
 credenciais.local.md
 *.local.secret

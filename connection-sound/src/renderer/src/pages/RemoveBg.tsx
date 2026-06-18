@@ -86,11 +86,12 @@ export function RemoveBg(): JSX.Element {
           if (total > 0) update(id, { pct: Math.min(99, Math.round((current / total) * 100)) })
         }
 
-        // Modo Objetos/Logos usa isnet_quant (mais genérico) + pós-processamento de máscara
-        const selectedModel = mode === 'objeto' ? 'isnet_quant' : 'isnet'
+        // Modelo isnet_fp16 (boa qualidade) embutido localmente — sem download da internet.
+        // O modo Objetos/Logos usa o mesmo modelo + pós-processamento de máscara nas bordas.
         const cfg = (device: 'gpu' | 'cpu'): Parameters<typeof removeBackground>[1] => ({
-          model: selectedModel as Parameters<typeof removeBackground>[1] extends { model?: infer M } ? M : never,
+          model: 'isnet_fp16',
           device,
+          publicPath: 'csassets://model/',
           output: { format: 'image/png', quality: 1 },
           progress: onProg
         })

@@ -7,9 +7,13 @@ import { promisify } from 'util'
 const pexec = promisify(execFile)
 
 function binDir(): string {
+  // IMPORTANTE: em produção os binários ficam em <resourcesPath>/bin (via extraResources),
+  // que são arquivos REAIS no disco. NÃO use app.getAppPath()/resources/bin primeiro: em
+  // produção esse caminho aponta para DENTRO do app.asar, e o existsSync "mente" (o Electron
+  // faz o asar parecer uma pasta), fazendo o spawn falhar com ENOENT ao tentar executar o .exe.
   const candidates = [
-    join(app.getAppPath(), 'resources', 'bin'),
-    join(process.resourcesPath || '', 'bin')
+    join(process.resourcesPath || '', 'bin'), // produção (arquivos reais)
+    join(app.getAppPath(), 'resources', 'bin') // dev (resources/bin do projeto)
   ]
   for (const c of candidates) if (existsSync(c)) return c
   return candidates[0]

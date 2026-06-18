@@ -15,15 +15,20 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,tsconfig.*.tsbuildinfo}'
   - '!supabase/*'
   - '!docs/*'
+  - '!scripts/*'
+  # resources/ é entregue só via extraResources (abaixo). Não empacotar no asar,
+  # senão os binários e o modelo ficariam duplicados (e o spawn falharia no asar).
+  - '!resources/**'
 
 extraResources:
   - from: resources/bin
     to: bin
     filter:
       - '**/*'
-
-asarUnpack:
-  - resources/**
+  - from: resources/imgly
+    to: imgly
+    filter:
+      - '**/*'
 
 win:
   target:

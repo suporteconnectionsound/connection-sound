@@ -3,6 +3,8 @@ import { IconCheck, IconRefresh } from '@tabler/icons-react'
 import { TitleBar } from '@/components/TitleBar'
 import { Sidebar } from '@/components/Sidebar'
 import { AuthGate } from '@/components/AuthGate'
+import { Tour } from '@/components/Tour'
+import { useAuth } from '@/lib/auth'
 import { Downloads } from '@/pages/Downloads'
 import { Tool } from '@/pages/Tool'
 import { RemoveBg } from '@/pages/RemoveBg'
@@ -23,9 +25,23 @@ export default function App(): JSX.Element {
   const [page, setPage] = useState<PageId>('downloads')
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const [updateReady, setUpdateReady] = useState(false)
+  const [showTour, setShowTour] = useState(false)
   const toastId = useRef(0)
+  const { user, hasAccess, loading } = useAuth()
 
   useEffect(() => window.cs.onUpdateDownloaded(() => setUpdateReady(true)), [])
+
+  // Guia de primeiro uso: só na primeira vez que o usuário entra com acesso.
+  useEffect(() => {
+    if (loading || !user || !hasAccess) return
+    const key = 'cs_onboarded_' + user.id
+    if (!localStorage.getItem(key)) setShowTour(true)
+  }, [loading, user, hasAccess])
+
+  const finishTour = useCallback(() => {
+    if (user) localStorage.setItem('cs_onboarded_' + user.id, '1')
+    setShowTour(false)
+  }, [user])
 
   const pushToast = useCallback((name: string) => {
     const id = toastId.current++
@@ -83,6 +99,10 @@ export default function App(): JSX.Element {
             <section className="content">{renderPage()}</section>
           </div>
         </AuthGate>
+
+        {showTour && hasAccess && (
+          <Tour currentPage={page} onNavigate={setPage} onClose={finishTour} />
+        )}
 
         {updateReady && (
           <div className="updatebar">

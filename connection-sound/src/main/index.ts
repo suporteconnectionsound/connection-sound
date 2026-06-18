@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, protocol } from 'electron'
 import { join, dirname, basename, extname } from 'path'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { DownloadService, type EnqueuePayload } from './services/downloadService'
 import { MediaService } from './services/mediaService'
 import { checkTools } from './services/binaryManager'
@@ -10,6 +11,23 @@ const isDev = !app.isPackaged
 let mainWindow: BrowserWindow | null = null
 let downloads: DownloadService | null = null
 let media: MediaService | null = null
+let checkoutWindow: BrowserWindow | null = null
+
+// Protocolo local para servir o modelo de remoção de fundo embutido (offline).
+// Precisa ser registrado ANTES do app ficar pronto.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'csassets',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, bypassCSP: true }
+  }
+])
+
+// Pasta com os arquivos do modelo (@imgly). Em produção via extraResources; em dev no projeto.
+function imglyDir(): string {
+  const candidates = [join(process.resourcesPath || '', 'imgly'), join(app.getAppPath(), 'resources', 'imgly')]
+  for (const c of candidates) if (existsSync(c)) return c
+  return candidates[0]
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -52,6 +70,29 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Serve os arquivos do modelo de remoção de fundo a partir do disco (sem internet).
+  protocol.handle('csassets', async (request) => {
+    try {
+      const file = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, '')
+      const dir = imglyDir()
+      const full = join(dir, file)
+      if (!full.startsWith(dir)) return new Response('forbidden', { status: 403 })
+      const data = await readFile(full)
+      const type = file.endsWith('.json')
+        ? 'application/json'
+        : file.endsWith('.wasm')
+          ? 'application/wasm'
+          : file.endsWith('.mjs')
+            ? 'text/javascript'
+            : 'application/octet-stream'
+      return new Response(new Uint8Array(data), {
+        headers: { 'content-type': type, 'access-control-allow-origin': '*' }
+      })
+    } catch {
+      return new Response('not found', { status: 404 })
+    }
+  })
+
   const defaultDir = join(app.getPath('downloads'), 'Connection Sound')
   downloads = new DownloadService((payload) => {
     mainWindow?.webContents.send('download:event', payload)
@@ -116,6 +157,11 @@ app.whenReady().then(() => {
   // Checkout da Stripe numa janela embutida (sem navegador externo).
   ipcMain.handle('billing:checkout', (_e, url: unknown) => {
     if (!mainWindow || typeof url !== 'string' || !/^https:\/\//i.test(url)) return Promise.resolve('error')
+    // Já existe um checkout aberto? Foca nele e ignora o pedido duplicado (evita várias janelas).
+    if (checkoutWindow && !checkoutWindow.isDestroyed()) {
+      checkoutWindow.focus()
+      return Promise.resolve('cancel')
+    }
     return new Promise<string>((resolve) => {
       const win = new BrowserWindow({
         width: 480,
@@ -128,6 +174,7 @@ app.whenReady().then(() => {
         autoHideMenuBar: true,
         webPreferences: { sandbox: true }
       })
+      checkoutWindow = win
       let done = false
       const finish = (result: string): void => {
         if (done) return
@@ -148,6 +195,7 @@ app.whenReady().then(() => {
         inspect(u)
       })
       win.on('closed', () => {
+        checkoutWindow = null
         if (!done) {
           done = true
           resolve('closed')
