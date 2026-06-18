@@ -1,7 +1,7 @@
 // Cria uma sessão de checkout da Stripe (server-side, usa a chave secreta).
 // Dois modos:
 //   - Cartão  → assinatura recorrente (mode: subscription) usando um priceId recorrente.
-//   - Pix     → pagamento único (mode: payment) que libera N dias de acesso.
+//   - Boleto  → pagamento único (mode: payment) que libera N dias de acesso.
 // O app chama esta função com o JWT do usuário; ela devolve a URL do checkout.
 import Stripe from 'https://esm.sh/stripe@16?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -14,10 +14,10 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 }
 
-// Valores do Pix (à vista) controlados pelo servidor — não confia em valor vindo do cliente.
-const PIX_PLANS: Record<string, { amount: number; days: number; label: string }> = {
-  month: { amount: 1999, days: 30, label: 'Connection Sound Pro — 1 mês (Pix)' },
-  year: { amount: 11999, days: 365, label: 'Connection Sound Pro — 1 ano (Pix)' }
+// Valores do pagamento à vista (Boleto) controlados pelo servidor — não confia no cliente.
+const ONETIME_PLANS: Record<string, { amount: number; days: number; label: string }> = {
+  month: { amount: 1999, days: 30, label: 'Connection Sound Pro — 1 mês' },
+  year: { amount: 11999, days: 365, label: 'Connection Sound Pro — 1 ano' }
 }
 
 Deno.serve(async (req) => {
@@ -33,12 +33,12 @@ Deno.serve(async (req) => {
     if (!user) return new Response(JSON.stringify({ error: 'não autenticado' }), { status: 401, headers: cors })
 
     const { priceId, method, plan } = await req.json()
-    const isPix = method === 'pix'
-    if (!isPix && !priceId) {
+    const isBoleto = method === 'boleto'
+    if (!isBoleto && !priceId) {
       return new Response(JSON.stringify({ error: 'priceId ausente' }), { status: 400, headers: cors })
     }
-    if (isPix && !PIX_PLANS[plan]) {
-      return new Response(JSON.stringify({ error: 'plano Pix inválido' }), { status: 400, headers: cors })
+    if (isBoleto && !ONETIME_PLANS[plan]) {
+      return new Response(JSON.stringify({ error: 'plano inválido' }), { status: 400, headers: cors })
     }
 
     // Reaproveita (ou cria) o cliente Stripe do usuário.
@@ -60,12 +60,12 @@ Deno.serve(async (req) => {
     const cancel_url = 'https://connectionsound.com/cs-cancel'
 
     let session: Stripe.Checkout.Session
-    if (isPix) {
-      const p = PIX_PLANS[plan]
+    if (isBoleto) {
+      const p = ONETIME_PLANS[plan]
       session = await stripe.checkout.sessions.create({
         mode: 'payment',
         customer: customerId,
-        payment_method_types: ['pix'],
+        payment_method_types: ['boleto'],
         line_items: [
           {
             price_data: {
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
             quantity: 1
           }
         ],
-        metadata: { user_id: user.id, access_days: String(p.days), kind: 'pix' },
+        metadata: { user_id: user.id, access_days: String(p.days), kind: 'boleto' },
         payment_intent_data: { metadata: { user_id: user.id, access_days: String(p.days) } },
         success_url,
         cancel_url

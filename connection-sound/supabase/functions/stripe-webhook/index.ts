@@ -29,7 +29,7 @@ async function syncSubscription(subscriptionId: string, userIdHint?: string): Pr
   else await admin.from('subscriptions').update(patch).eq('stripe_customer_id', customerId)
 }
 
-// Pagamento Pix (à vista): libera acesso por N dias. Empilha se ainda houver tempo.
+// Pagamento à vista (Boleto): libera acesso por N dias. Empilha se ainda houver tempo.
 async function grantOneTime(session: Stripe.Checkout.Session): Promise<void> {
   const userId =
     (session.client_reference_id as string | null) ?? (session.metadata?.user_id as string | undefined)
@@ -52,7 +52,7 @@ async function grantOneTime(session: Stripe.Checkout.Session): Promise<void> {
     .from('subscriptions')
     .update({
       status: 'active',
-      price_id: `pix_${days}d`,
+      price_id: `boleto_${days}d`,
       current_period_end: end,
       stripe_customer_id: customerId ?? undefined,
       updated_at: new Date().toISOString()

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconCheck, IconLoader2, IconRefresh, IconLogout, IconX, IconCreditCard, IconQrcode } from '@tabler/icons-react'
+import { IconCheck, IconLoader2, IconRefresh, IconLogout, IconX, IconCreditCard, IconBarcode } from '@tabler/icons-react'
 import { useAuth } from '@/lib/auth'
 import { startCheckout, type PayMethod } from '@/lib/billing'
 
@@ -13,15 +13,24 @@ export function Paywall({ onClose }: Props): JSX.Element {
   const [busy, setBusy] = useState<string | null>(null)
   const [method, setMethod] = useState<PayMethod>('card')
   const [msg, setMsg] = useState('')
-  const isPix = method === 'pix'
+  const isBoleto = method === 'boleto'
 
   async function assinar(plan: 'month' | 'year'): Promise<void> {
     if (busy) return
     setBusy(plan)
     setMsg('')
     const r = await startCheckout(plan, method)
-    if (r === 'success') {
-      setMsg(isPix ? 'Pix confirmado! Liberando seu acesso…' : 'Pagamento recebido! Ativando sua assinatura…')
+    if (isBoleto) {
+      // Boleto compensa em até 1 dia útil — o acesso é liberado pelo webhook depois.
+      if (r === 'success' || r === 'closed') {
+        setMsg(
+          'Boleto gerado! Pague pelo app do seu banco. Assim que compensar (até 1 dia útil), seu acesso é liberado automaticamente. Também enviamos o boleto pro seu e-mail.'
+        )
+      } else if (r === 'error') {
+        setMsg('Não consegui abrir o checkout agora. Tente de novo em instantes.')
+      }
+    } else if (r === 'success') {
+      setMsg('Pagamento recebido! Ativando sua assinatura…')
       for (let i = 0; i < 6; i++) {
         await new Promise((res) => setTimeout(res, 1500))
         await refresh()
@@ -45,23 +54,23 @@ export function Paywall({ onClose }: Props): JSX.Element {
           <IconCreditCard size={16} /> Cartão
           <span>renova automático</span>
         </button>
-        <button className={'pwmtab' + (method === 'pix' ? ' on' : '')} onClick={() => setMethod('pix')}>
-          <IconQrcode size={16} /> Pix
+        <button className={'pwmtab' + (method === 'boleto' ? ' on' : '')} onClick={() => setMethod('boleto')}>
+          <IconBarcode size={16} /> Boleto
           <span>à vista, sem renovação</span>
         </button>
       </div>
 
       <div className="pwplans">
         <div className="pwplan">
-          <div className="pwname">{isPix ? '30 dias' : 'Mensal'}</div>
+          <div className="pwname">{isBoleto ? '30 dias' : 'Mensal'}</div>
           <div className="pwprice">
-            R$ 19,99<span>{isPix ? '/30 dias' : '/mês'}</span>
+            R$ 19,99<span>{isBoleto ? '/30 dias' : '/mês'}</span>
           </div>
           <button className="pwbtn" onClick={() => assinar('month')} disabled={!!busy}>
             {busy === 'month' ? (
               <IconLoader2 size={16} className="spin" />
-            ) : isPix ? (
-              'Pagar com Pix'
+            ) : isBoleto ? (
+              'Pagar com Boleto'
             ) : (
               'Assinar mensal'
             )}
@@ -69,15 +78,15 @@ export function Paywall({ onClose }: Props): JSX.Element {
         </div>
         <div className="pwplan featured">
           <div className="pwbadge">Melhor valor · 50% off</div>
-          <div className="pwname">{isPix ? '1 ano' : 'Anual'}</div>
+          <div className="pwname">{isBoleto ? '1 ano' : 'Anual'}</div>
           <div className="pwprice">
             R$ 119,99<span>/ano</span>
           </div>
           <button className="pwbtn primary" onClick={() => assinar('year')} disabled={!!busy}>
             {busy === 'year' ? (
               <IconLoader2 size={16} className="spin" />
-            ) : isPix ? (
-              'Pagar com Pix'
+            ) : isBoleto ? (
+              'Pagar com Boleto'
             ) : (
               'Assinar anual'
             )}
@@ -97,10 +106,10 @@ export function Paywall({ onClose }: Props): JSX.Element {
         </li>
       </ul>
 
-      {isPix && (
+      {isBoleto && (
         <div className="pwnote">
-          No Pix o acesso é liberado assim que o pagamento é confirmado e vale pelo período escolhido. Depois é só
-          pagar de novo pra renovar.
+          O boleto compensa em até 1 dia útil. Assim que o pagamento cair, o acesso é liberado automaticamente pelo
+          período escolhido. Depois é só gerar outro pra renovar.
         </div>
       )}
 
