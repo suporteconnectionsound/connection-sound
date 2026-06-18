@@ -140,7 +140,7 @@ export function Settings(): JSX.Element {
         </div>
         <div className="setrow">
           <span className="setlabel">Versão</span>
-          <span className="setval">Connection Sound 0.1.1</span>
+          <span className="setval">Connection Sound 0.1.2</span>
         </div>
         <div className="setrow">
           <span className="setlabel">Motor de download</span>

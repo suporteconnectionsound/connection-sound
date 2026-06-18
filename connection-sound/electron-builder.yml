@@ -34,7 +34,9 @@ win:
   target:
     - nsis
   icon: build/icon.ico
-  artifactName: ${productName}-Setup-${version}.${ext}
+  # Sem espaços no nome: o GitHub troca espaço por ponto e quebra o auto-update
+  # (o latest.yml usa o nome com hífens). Manter consistente disco/latest.yml/GitHub.
+  artifactName: Connection-Sound-Setup-${version}.${ext}
 
 nsis:
   oneClick: false
