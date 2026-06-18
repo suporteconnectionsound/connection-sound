@@ -35,6 +35,8 @@ export function Paywall({ onClose }: Props): JSX.Element {
         await new Promise((res) => setTimeout(res, 1500))
         await refresh()
       }
+      // Overlay (durante o teste): fecha sozinho. No paywall-gate o AuthGate já troca pro app.
+      onClose?.()
     } else if (r === 'error') {
       setMsg('Não consegui abrir o checkout agora. Tente de novo em instantes.')
     }

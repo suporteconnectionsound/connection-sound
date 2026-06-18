@@ -34,12 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   const [subscription, setSubscription] = useState<Subscription | null>(null)
 
   const loadData = useCallback(async (userId: string) => {
-    const [{ data: prof }, { data: sub }] = await Promise.all([
+    const [{ data: prof, error: e1 }, { data: sub, error: e2 }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       supabase.from('subscriptions').select('*').eq('user_id', userId).maybeSingle()
     ])
-    setProfile((prof as Profile | null) ?? null)
-    setSubscription((sub as Subscription | null) ?? null)
+    // Em caso de erro de rede, NÃO apaga o que já estava carregado (não trava quem tem acesso).
+    if (!e1) setProfile((prof as Profile | null) ?? null)
+    if (!e2) setSubscription((sub as Subscription | null) ?? null)
   }, [])
 
   useEffect(() => {
