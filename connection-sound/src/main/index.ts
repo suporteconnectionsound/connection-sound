@@ -167,7 +167,7 @@ app.whenReady().then(() => {
         width: 480,
         height: 760,
         parent: mainWindow ?? undefined,
-        modal: true,
+        // NÃO usar modal: janela modal que demora a carregar congela o app inteiro.
         show: false,
         title: 'Pagamento — Connection Sound',
         backgroundColor: '#0b0b0e',
@@ -176,9 +176,19 @@ app.whenReady().then(() => {
       })
       checkoutWindow = win
       let done = false
+      let shown = false
+      let loadGuard: ReturnType<typeof setTimeout>
+
+      const showWin = (): void => {
+        if (!win.isDestroyed() && !shown) {
+          shown = true
+          win.show()
+        }
+      }
       const finish = (result: string): void => {
         if (done) return
         done = true
+        clearTimeout(loadGuard)
         resolve(result)
         if (!win.isDestroyed()) win.close()
       }
@@ -194,15 +204,28 @@ app.whenReady().then(() => {
         if (u.includes('cs-success') || u.includes('cs-cancel')) e.preventDefault()
         inspect(u)
       })
+      // Página carregou: mostra a janela e cancela a trava (o usuário pode demorar pagando).
+      win.webContents.on('did-finish-load', () => {
+        showWin()
+        clearTimeout(loadGuard)
+      })
+      // Falha real de carregamento (ignora ERR_ABORTED = -3, que ocorre nos redirects que cancelamos).
+      win.webContents.on('did-fail-load', (_e, code, _desc, _u, isMainFrame) => {
+        if (isMainFrame && code !== -3) finish('error')
+      })
       win.on('closed', () => {
         checkoutWindow = null
+        clearTimeout(loadGuard)
         if (!done) {
           done = true
           resolve('closed')
         }
       })
-      win.once('ready-to-show', () => win.show())
-      win.loadURL(url)
+      win.once('ready-to-show', showWin)
+      // Garante exibição mesmo se ready-to-show demorar, e nunca deixa o botão preso.
+      setTimeout(showWin, 1500)
+      loadGuard = setTimeout(() => finish('error'), 25000)
+      win.loadURL(url).catch(() => finish('error'))
     })
   })
 
