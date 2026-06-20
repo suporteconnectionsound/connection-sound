@@ -32,8 +32,10 @@ const POS_TITLE = /coreografia|choreograph|coregraf|\bdance\b|dança|danca/i
 const NEG_TITLE = /lyric|letra|\baudio\b|áudio|slowed|reverb|\b8d\b|karaoke|instrumental|\bcover\b|remix|sped up|nightcore/i
 const LIVE = /ao vivo|\blive\b/i
 
-/** Pontua um candidato de vídeo de coreografia. Função pura (testável isoladamente). */
-export function scoreCandidate(c: Candidate): number {
+/** Pontua um candidato de vídeo de coreografia. Função pura (testável isoladamente).
+ *  `query` = nome da música buscada; usado para garantir que é a MÚSICA certa
+ *  (evita pegar coreografia de outra música do mesmo canal). */
+export function scoreCandidate(c: Candidate, query = ''): number {
   let s = 0
   const title = (c.title || '').toLowerCase()
   const ch = (c.uploader || c.channel || '').toLowerCase()
@@ -51,16 +53,25 @@ export function scoreCandidate(c: Candidate): number {
   const v = c.view_count || 0
   s += Math.min(2, Math.log10(v + 1) / 3)
 
+  // Casamento com o nome da música: prioriza o título que realmente bate com a busca.
+  const qWords = [...new Set(query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3))]
+  if (qWords.length) {
+    const matched = qWords.filter((w) => title.includes(w)).length
+    const ratio = matched / qWords.length
+    s += ratio * 4 // até +4 quando o título bate bem com a música buscada
+    if (ratio < 0.34) s -= 5 // penaliza forte quando quase não bate (música errada)
+  }
+
   return s
 }
 
 /** Escolhe o melhor candidato acima de um limiar; senão null (→ fallback p/ versão normal). */
-export function pickBest(entries: Candidate[], threshold = 3): Candidate | null {
+export function pickBest(entries: Candidate[], query = '', threshold = 3): Candidate | null {
   let best: Candidate | null = null
   let bestScore = -Infinity
   for (const e of entries) {
     if (!e) continue
-    const sc = scoreCandidate(e)
+    const sc = scoreCandidate(e, query)
     if (sc > bestScore) {
       bestScore = sc
       best = e
@@ -81,7 +92,7 @@ export class ChoreographyRanker {
       )
       const j = JSON.parse(stdout)
       const entries: Candidate[] = j.entries || []
-      const best = pickBest(entries)
+      const best = pickBest(entries, query)
       if (!best) return null
       return {
         url: best.url || `https://www.youtube.com/watch?v=${best.id}`,
