@@ -8,7 +8,7 @@ import { Paywall } from '@/pages/Paywall'
 const DEV_SKIP = import.meta.env.DEV
 
 export function AuthGate({ children }: { children: ReactNode }): JSX.Element {
-  const { loading, session, hasAccess } = useAuth()
+  const { loading, dataReady, session, hasAccess } = useAuth()
 
   if (DEV_SKIP) return <>{children}</>
 
@@ -20,6 +20,14 @@ export function AuthGate({ children }: { children: ReactNode }): JSX.Element {
     )
   }
   if (!session) return <Login />
+  // Tem sessão mas os dados ainda não carregaram → espera (não mostra paywall por engano).
+  if (!dataReady) {
+    return (
+      <div className="authpage">
+        <IconLoader2 size={30} className="spin" style={{ color: 'var(--acc)' }} />
+      </div>
+    )
+  }
   if (!hasAccess) return <Paywall />
   return <>{children}</>
 }

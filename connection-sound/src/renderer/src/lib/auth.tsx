@@ -4,6 +4,7 @@ import { supabase, type Profile, type Subscription } from './supabase'
 
 interface AuthState {
   loading: boolean
+  dataReady: boolean
   session: Session | null
   user: User | null
   profile: Profile | null
@@ -29,18 +30,30 @@ const DAY = 86400000
 
 export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
   const [loading, setLoading] = useState(true)
+  const [dataReady, setDataReady] = useState(false)
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
 
   const loadData = useCallback(async (userId: string) => {
-    const [{ data: prof, error: e1 }, { data: sub, error: e2 }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      supabase.from('subscriptions').select('*').eq('user_id', userId).maybeSingle()
-    ])
-    // Em caso de erro de rede, NÃO apaga o que já estava carregado (não trava quem tem acesso).
-    if (!e1) setProfile((prof as Profile | null) ?? null)
-    if (!e2) setSubscription((sub as Subscription | null) ?? null)
+    // Tenta algumas vezes: em rede lenta, evita "liberar" sem os dados e mostrar
+    // o paywall por engano (bug do "teste terminou" sem ter passado o tempo).
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const [{ data: prof, error: e1 }, { data: sub, error: e2 }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        supabase.from('subscriptions').select('*').eq('user_id', userId).maybeSingle()
+      ])
+      // Em caso de erro, NÃO apaga o que já estava carregado.
+      if (!e1) setProfile((prof as Profile | null) ?? null)
+      if (!e2) setSubscription((sub as Subscription | null) ?? null)
+      if (!e1 && !e2) {
+        setDataReady(true)
+        return
+      }
+      await new Promise((r) => setTimeout(r, 1200))
+    }
+    // Esgotou as tentativas: libera a UI mesmo assim (não fica preso no spinner).
+    setDataReady(true)
   }, [])
 
   useEffect(() => {
@@ -71,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       else {
         setProfile(null)
         setSubscription(null)
+        setDataReady(false)
       }
       finish()
     })
@@ -119,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     <Ctx.Provider
       value={{
         loading,
+        dataReady,
         session,
         user: session?.user ?? null,
         profile,

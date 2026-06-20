@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export const ADMIN_EMAIL = 'davidlindoso43@gmail.com'
+export const ADMIN_EMAIL = 'davidlindoso44@gmail.com'
 
 export interface AdminStats {
   revenue: number
