@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connection Sound — Baixe qualquer música em segundos (MP3/MP4)</title>
+<meta name="description" content="O programa para Windows que baixa músicas e playlists inteiras do Spotify e YouTube em MP3/MP4, encontra coreografias, remove fundo com IA e muito mais. Teste grátis por 3 dias.">
+<meta property="og:title" content="Connection Sound — Baixe qualquer música em segundos">
+<meta property="og:description" content="Playlists inteiras do Spotify e YouTube em MP3/MP4. Coreografias, remover fundo com IA, conversor e mais. Teste grátis 3 dias.">
+<meta property="og:type" content="website">
+<style>
+  :root{
+    --bg:#070709; --bg2:#0d0d12; --glass:rgba(20,20,27,.62); --glass2:rgba(30,30,39,.7);
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --txt:#f5f5f8; --txt2:#a6a6b3; --txt3:#6c6c79;
+    --acc:#ff7a2f; --acc2:#f25312; --green:#3fb984;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;line-height:1.6;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  /* aurora */
+  .aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;filter:blur(90px);opacity:.35}
+  .aurora i{position:absolute;border-radius:50%}
+  .aurora .a{width:46vw;height:46vw;left:60%;top:-14%;background:radial-gradient(circle,#ff7a2f,transparent 65%)}
+  .aurora .b{width:42vw;height:42vw;left:-10%;top:55%;background:radial-gradient(circle,#5b63f0,transparent 65%)}
+  /* nav */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px}
+  .logo .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc),var(--acc2));font-size:15px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:650;border-radius:12px;cursor:pointer;border:1px solid var(--line);transition:transform .15s ease,filter .2s}
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+  .btn.primary{background:linear-gradient(135deg,#ff9248,var(--acc2));color:#fff;border:none;box-shadow:0 10px 30px rgba(242,83,18,.35)}
+  .btn.ghost{background:var(--glass);color:var(--txt2)}
+  .btn.big{padding:16px 30px;font-size:16.5px}
+  .btn.sm{padding:10px 18px;font-size:13.5px}
+  /* hero */
+  .hero{text-align:center;padding:72px 0 40px}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--acc);background:rgba(255,122,47,.1);border:1px solid rgba(255,122,47,.25);padding:7px 14px;border-radius:99px;margin-bottom:22px}
+  h1{font-size:clamp(34px,6vw,58px);line-height:1.12;letter-spacing:-.02em;font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,#ff9248,var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{max-width:640px;margin:20px auto 30px;color:var(--txt2);font-size:18px}
+  .hero .note{margin-top:12px;font-size:12.5px;color:var(--txt3)}
+  .heroCtas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  /* app mock */
+  .mock{max-width:860px;margin:52px auto 0;background:var(--glass2);border:1px solid var(--line2);border-radius:18px;padding:14px;box-shadow:0 40px 90px rgba(0,0,0,.55);backdrop-filter:blur(20px)}
+  .mock .bar{display:flex;gap:6px;padding:2px 4px 12px}
+  .mock .bar i{width:10px;height:10px;border-radius:99px;background:var(--line2)}
+  .mock .bar i:first-child{background:#e9b64f}.mock .bar i:nth-child(2){background:var(--green)}.mock .bar i:nth-child(3){background:#e9594f}
+  .mrow{display:flex;align-items:center;gap:14px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-top:10px;text-align:left}
+  .mrow .cov{width:40px;height:40px;border-radius:9px;flex-shrink:0}
+  .mrow .tt{font-size:14px;font-weight:600}
+  .mrow .st{font-size:11.5px;color:var(--txt3)}
+  .mrow .tag{margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;flex-shrink:0}
+  .tag.ok{background:rgba(63,185,132,.15);color:var(--green)}
+  .tag.dl{background:rgba(90,140,255,.15);color:#8fb3ff}
+  .track{height:5px;border-radius:99px;background:rgba(255,255,255,.08);margin-top:7px;overflow:hidden}
+  .track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ff9248,var(--acc2))}
+  /* sections */
+  section{padding:76px 0}
+  .kicker{text-align:center;color:var(--acc);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  h2{text-align:center;font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;margin:10px 0 14px}
+  .lead{text-align:center;color:var(--txt2);max-width:560px;margin:0 auto 46px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:26px}
+  .card .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,rgba(255,122,47,.18),rgba(242,83,18,.07));border:1px solid rgba(255,122,47,.2);margin-bottom:16px}
+  .card h3{font-size:16.5px;margin-bottom:7px}
+  .card p{font-size:13.5px;color:var(--txt2)}
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;counter-reset:st}
+  .step{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:26px;position:relative}
+  .step b{display:block;font-size:16px;margin-bottom:6px}
+  .step p{font-size:13.5px;color:var(--txt2)}
+  .step::before{counter-increment:st;content:counter(st);position:absolute;top:-14px;left:22px;width:30px;height:30px;border-radius:99px;display:grid;place-items:center;font-weight:800;font-size:14px;background:linear-gradient(135deg,#ff9248,var(--acc2));color:#fff}
+  /* pricing */
+  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:640px;margin:0 auto}
+  .plan{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:30px;text-align:center;position:relative}
+  .plan.featured{border-color:rgba(255,122,47,.5);box-shadow:0 20px 60px rgba(242,83,18,.15)}
+  .plan .badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ff9248,var(--acc2));color:#fff;font-size:11.5px;font-weight:700;padding:5px 14px;border-radius:99px;white-space:nowrap}
+  .plan .nm{font-size:14px;color:var(--txt2);font-weight:600}
+  .plan .pr{font-size:38px;font-weight:800;margin:10px 0 2px}
+  .plan .pr span{font-size:14px;color:var(--txt3);font-weight:500}
+  .plan .eq{font-size:12px;color:var(--txt3);margin-bottom:18px}
+  .plan ul{list-style:none;text-align:left;margin:18px 0 22px;font-size:13.5px;color:var(--txt2)}
+  .plan li{padding:5px 0 5px 26px;position:relative}
+  .plan li::before{content:"✓";position:absolute;left:2px;color:var(--green);font-weight:700}
+  /* faq */
+  .faq{max-width:700px;margin:0 auto}
+  details{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:10px}
+  summary{cursor:pointer;font-weight:650;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::after{content:"+";color:var(--acc);font-size:20px;font-weight:400}
+  details[open] summary::after{content:"–"}
+  details p{margin-top:12px;font-size:14px;color:var(--txt2)}
+  /* final cta + footer */
+  .final{text-align:center;background:var(--glass);border:1px solid var(--line);border-radius:22px;padding:56px 30px}
+  footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;font-size:13px;color:var(--txt3)}
+  footer a{color:var(--acc)}
+  .warn{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--txt3);background:var(--glass);border:1px solid var(--line);padding:8px 16px;border-radius:99px}
+  @media(max-width:640px){ .hero{padding:44px 0 24px} section{padding:54px 0} }
+</style>
+</head>
+<body>
+<div class="aurora"><i class="a"></i><i class="b"></i></div>
+
+<div class="wrap">
+  <nav>
+    <div class="logo"><span class="ic">▶</span> Connection&nbsp;Sound</div>
+    <a class="btn primary sm" href="#download">Testar grátis</a>
+  </nav>
+</div>
+
+<header class="hero wrap">
+  <div class="pill">🎧 Para DJs, professores de dança e criadores</div>
+  <h1>Baixe qualquer música.<br><span class="grad">Em segundos.</span></h1>
+  <p class="sub">O programa para Windows que baixa <b>playlists inteiras</b> do Spotify e YouTube em MP3 ou MP4, encontra <b>coreografias</b>, remove fundo com IA e muito mais — tudo num lugar só, sem anúncio e sem vírus.</p>
+  <div class="heroCtas">
+    <a class="btn primary big" id="dlbtn" href="https://github.com/suporteconnectionsound/connection-sound/releases/latest">⬇ Baixar grátis — teste 3 dias</a>
+  </div>
+  <div class="note">💻 Para Windows 10/11 · Sem cartão para testar · Cancele quando quiser</div>
+
+  <div class="mock">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <div class="mrow">
+      <div class="cov" style="background:linear-gradient(135deg,#6d28d9,#db2777)"></div>
+      <div style="flex:1;min-width:0">
+        <div class="tt">Top 50 — Brazil (playlist completa)</div>
+        <div class="track"><i style="width:72%"></i></div>
+        <div class="st">36/50 · baixando 4 ao mesmo tempo</div>
+      </div>
+      <span class="tag dl">MP3 · 320kbps</span>
+    </div>
+    <div class="mrow">
+      <div class="cov" style="background:linear-gradient(135deg,#0ea5e9,#22d3ee)"></div>
+      <div style="flex:1;min-width:0">
+        <div class="tt">FitDance — Coreografia oficial</div>
+        <div class="st">MP4 · 1080p · verificado</div>
+      </div>
+      <span class="tag ok">Concluído ✓</span>
+    </div>
+    <div class="mrow">
+      <div class="cov" style="background:linear-gradient(135deg,#10b981,#059669)"></div>
+      <div style="flex:1;min-width:0">
+        <div class="tt">Logo da equipe — fundo removido com IA</div>
+        <div class="st">PNG transparente · processado no seu PC</div>
+      </div>
+      <span class="tag ok">Concluído ✓</span>
+    </div>
+  </div>
+</header>
+
+<section id="recursos">
+  <div class="wrap">
+    <div class="kicker">Tudo incluído</div>
+    <h2>Um kit completo de mídia</h2>
+    <p class="lead">Pare de pular entre 5 sites cheios de anúncio. O Connection Sound faz tudo.</p>
+    <div class="grid">
+      <div class="card"><div class="ic">🎵</div><h3>Músicas em MP3 320kbps</h3><p>Cole o link ou digite o nome. Qualidade máxima, com capa e metadados embutidos.</p></div>
+      <div class="card"><div class="ic">📃</div><h3>Playlists inteiras</h3><p>Cole uma playlist do Spotify ou YouTube e ela vira uma pasta organizada, baixando várias músicas ao mesmo tempo.</p></div>
+      <div class="card"><div class="ic">💃</div><h3>Modo Coreografia</h3><p>Baixando em MP4, ele encontra automaticamente a versão de coreografia da música (FitDance e outros).</p></div>
+      <div class="card"><div class="ic">✂️</div><h3>Remover fundo com IA</h3><p>Fotos e logos com fundo transparente em um clique. A IA roda no seu PC — sem internet e sem marca d'água.</p></div>
+      <div class="card"><div class="ic">🔄</div><h3>Conversor e Compressor</h3><p>Converta entre MP3, MP4, WAV, PNG, JPG e mais. Comprima vídeos sem perda visível.</p></div>
+      <div class="card"><div class="ic">🎬</div><h3>Slideshow automático</h3><p>Transforme fotos em vídeo com fundo desfocado e transições — pronto para telão e redes sociais.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="como">
+  <div class="wrap">
+    <div class="kicker">Simples assim</div>
+    <h2>Comece em 2 minutos</h2>
+    <p class="lead">&nbsp;</p>
+    <div class="steps">
+      <div class="step"><b>Baixe e instale</b><p>Clique em "Baixar grátis", abra o instalador e pronto. Tudo já vem incluído — não precisa instalar mais nada.</p></div>
+      <div class="step"><b>Crie sua conta</b><p>Só e-mail e senha. Você ganha <b>3 dias grátis</b> com tudo liberado — sem pedir cartão.</p></div>
+      <div class="step"><b>Assine se amar</b><p>Gostou? Assine dentro do app e continue com acesso total. Cancele quando quiser.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="precos">
+  <div class="wrap">
+    <div class="kicker">Preços</div>
+    <h2>Menos que um lanche por mês</h2>
+    <p class="lead">Teste grátis por 3 dias. Depois, escolha seu plano dentro do app.</p>
+    <div class="plans">
+      <div class="plan">
+        <div class="nm">Mensal</div>
+        <div class="pr">R$ 19,99<span>/mês</span></div>
+        <div class="eq">&nbsp;</div>
+        <ul>
+          <li>Downloads ilimitados</li>
+          <li>Todas as ferramentas</li>
+          <li>Atualizações automáticas</li>
+          <li>Suporte no WhatsApp</li>
+        </ul>
+        <a class="btn ghost sm" href="#download">Começar teste grátis</a>
+      </div>
+      <div class="plan featured">
+        <div class="badge">MELHOR VALOR · 50% OFF</div>
+        <div class="nm">Anual</div>
+        <div class="pr">R$ 119,99<span>/ano</span></div>
+        <div class="eq">sai por menos de R$ 10/mês</div>
+        <ul>
+          <li>Tudo do plano mensal</li>
+          <li>2 meses grátis no preço</li>
+          <li>Preço travado por 1 ano</li>
+          <li>Suporte prioritário</li>
+        </ul>
+        <a class="btn primary sm" href="#download">Começar teste grátis</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="kicker">Dúvidas</div>
+    <h2>Perguntas frequentes</h2>
+    <p class="lead">&nbsp;</p>
+    <div class="faq">
+      <details>
+        <summary>Funciona no celular?</summary>
+        <p><b>Não — o Connection Sound é um programa para COMPUTADOR (Windows 10/11).</b> Ele não funciona em celular nem em Mac. É justamente por rodar no PC que ele consegue baixar playlists inteiras em alta qualidade e rodar IA localmente.</p>
+      </details>
+      <details>
+        <summary>Preciso de cartão para testar?</summary>
+        <p>Não. Você cria a conta com e-mail e senha e ganha 3 dias com tudo liberado. Só paga se quiser continuar.</p>
+      </details>
+      <details>
+        <summary>Como funciona o pagamento?</summary>
+        <p>Dentro do app, você escolhe o plano e paga com cartão (renovação automática) ou boleto. Cancele quando quiser, sem multa.</p>
+      </details>
+      <details>
+        <summary>É seguro? O Windows mostrou um aviso…</summary>
+        <p>Sim. O aviso "PC protegido pelo Windows" aparece em qualquer programa novo que ainda não é conhecido pela Microsoft. É só clicar em <b>"Mais informações" → "Executar assim mesmo"</b>. O app roda 100% no seu PC e não instala nada além dele mesmo.</p>
+      </details>
+      <details>
+        <summary>Posso usar em mais de um computador?</summary>
+        <p>Pode! Sua conta funciona em qualquer PC — é só instalar e entrar com seu e-mail e senha.</p>
+      </details>
+      <details>
+        <summary>As músicas baixadas ficam onde?</summary>
+        <p>Numa pasta que você escolhe (por padrão, Downloads/Connection Sound). Playlists viram subpastas organizadas com o nome da playlist.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="final">
+      <h2>Pronto para nunca mais sofrer<br>para baixar música?</h2>
+      <p class="lead" style="margin-bottom:28px">Teste grátis por 3 dias. Sem cartão. Cancele quando quiser.</p>
+      <a class="btn primary big" id="dlbtn2" href="https://github.com/suporteconnectionsound/connection-sound/releases/latest">⬇ Baixar Connection Sound grátis</a>
+      <div><span class="warn">💻 Programa para Windows 10/11 — não é aplicativo de celular</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Suporte: <a href="https://wa.me/5561992437695" target="_blank" rel="noopener">WhatsApp (61) 99243-7695</a> ·
+    <a href="mailto:suporteconnectionsound@gmail.com">suporteconnectionsound@gmail.com</a><br>
+    © Connection Sound — todos os direitos reservados.
+  </div>
+</footer>
+
+<script>
+// Aponta os botões de download direto pro .exe da última versão publicada no GitHub.
+// Se a API falhar, mantém o link da página de releases (fallback).
+fetch('https://api.github.com/repos/suporteconnectionsound/connection-sound/releases/latest')
+  .then(function(r){ return r.json() })
+  .then(function(rel){
+    var asset = (rel.assets || []).find(function(a){ return /\.exe$/i.test(a.name) })
+    if (asset) {
+      document.getElementById('dlbtn').href = asset.browser_download_url
+      document.getElementById('dlbtn2').href = asset.browser_download_url
+    }
+  })
+  .catch(function(){})
+</script>
+</body>
+</html>
