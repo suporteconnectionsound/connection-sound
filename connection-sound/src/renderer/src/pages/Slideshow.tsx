@@ -1,15 +1,44 @@
 import { useState } from 'react'
-import { IconPhoto } from '@tabler/icons-react'
+import { IconPhoto, IconAlertTriangle } from '@tabler/icons-react'
 import { DropArea } from '@/components/DropArea'
 import { MediaRow } from '@/components/MediaRow'
 import { useMedia } from '@/lib/useMedia'
+
+// Limites de segurança: protege a memória do app e o ffmpeg de virar pamonha.
+// 200 fotos a 5 MB cada = ~1 GB em RAM só pra decodificar.
+const MAX_FILES = 200
+const MAX_BYTES = 500 * 1024 * 1024
+
+function fmtBytes(n: number): string {
+  if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB'
+  return Math.max(1, Math.round(n / 1024)) + ' KB'
+}
 
 export function Slideshow(): JSX.Element {
   const [files, setFiles] = useState<string[]>([])
   const [resolution, setResolution] = useState('1080p')
   const [perPhoto, setPerPhoto] = useState(3)
   const [transition, setTransition] = useState('fade')
+  const [error, setError] = useState('')
   const items = useMedia('slideshow')
+
+  async function addFiles(paths: string[]): Promise<void> {
+    setError('')
+    const next = [...files, ...paths]
+    if (next.length > MAX_FILES) {
+      setError(`Limite de ${MAX_FILES} fotos por slideshow. Você tem ${next.length}.`)
+      return
+    }
+    const stats = await window.cs.statFiles(next)
+    const total = stats.reduce((s, f) => s + (f.size || 0), 0)
+    if (total > MAX_BYTES) {
+      setError(
+        `Tamanho total ${fmtBytes(total)} passa do limite (${fmtBytes(MAX_BYTES)}). Reduza a quantidade ou use fotos menores.`
+      )
+      return
+    }
+    setFiles(next)
+  }
 
   function run(): void {
     if (!files.length) return
@@ -26,10 +55,16 @@ export function Slideshow(): JSX.Element {
       <DropArea
         icon={IconPhoto}
         title="Arraste fotos ou um .zip"
-        hint="ou clique para selecionar — PNG, JPG, WEBP…"
+        hint={`ou clique para selecionar — PNG, JPG, WEBP… (até ${MAX_FILES} fotos / ${fmtBytes(MAX_BYTES)})`}
         filters={[{ name: 'Imagens / Zip', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'zip'] }]}
-        onFiles={(p) => setFiles((f) => [...f, ...p])}
+        onFiles={addFiles}
       />
+      {error && (
+        <div className="authmsg err" style={{ maxWidth: 560 }}>
+          <IconAlertTriangle size={15} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+          {error}
+        </div>
+      )}
       {files.length > 0 && (
         <div className="mbar">
           <span className="mcount">{files.length} item(ns)</span>

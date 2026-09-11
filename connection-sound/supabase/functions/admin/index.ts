@@ -1,8 +1,8 @@
 // Painel admin — só o ADMIN_EMAIL pode chamar. Faturamento, assinaturas e e-mails.
-import Stripe from 'https://esm.sh/stripe@16?target=deno'
+// Agora lê do Asaas (em vez de Stripe) para faturamento e cancelamento.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { asaasEnv } from '../_shared/asaas.ts'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, { apiVersion: '2024-06-20' })
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const ADMIN_EMAIL = (Deno.env.get('ADMIN_EMAIL') ?? '').toLowerCase()
 const RESEND = Deno.env.get('RESEND_API_KEY') ?? ''
@@ -39,32 +39,48 @@ Deno.serve(async (req: any) => {
   const { action, ...p } = await req.json()
   try {
     if (action === 'stats') {
-      const { data: subs } = await admin.from('subscriptions').select('status, stripe_subscription_id')
+      const { data: subs } = await admin.from('subscriptions').select('status, asaas_subscription_id, price_id')
       const { count: totalAccounts } = await admin.from('profiles').select('*', { count: 'exact', head: true })
       const list = subs ?? []
-      const activePaid = list.filter((s) => s.status === 'active' && s.stripe_subscription_id).length
-      const permanent = list.filter((s) => s.status === 'active' && !s.stripe_subscription_id).length
+      const activePaid = list.filter((s) => s.status === 'active' && s.asaas_subscription_id).length
+      const permanent = list.filter((s) => s.status === 'active' && !s.asaas_subscription_id).length
       const trialing = list.filter((s) => s.status === 'trialing').length
 
+      // Faturamento Asaas: soma de payments RECEIVED nos últimos 60 dias (paginando).
+      // (Asaas v3 ainda oferece /financialTransactions para o extrato completo.)
       let revenue = 0
-      let currency = 'brl'
-      let hasMore = true
-      let startingAfter: string | undefined = undefined
-      let guard = 0
-      while (hasMore && guard < 10) {
-        const ch = await stripe.charges.list({ limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) })
-        for (const c of ch.data) if (c.paid && c.status === 'succeeded') { revenue += c.amount; currency = c.currency }
-        hasMore = ch.has_more
-        startingAfter = ch.data[ch.data.length - 1]?.id
-        guard++
+      try {
+        const { baseUrl } = asaasEnv()
+        let offset = 0
+        const limit = 100
+        for (let i = 0; i < 20; i++) {
+          const r = await fetch(`${baseUrl}/payments?status=RECEIVED&limit=${limit}&offset=${offset}`, {
+            headers: { access_token: Deno.env.get('ASAAS_API_KEY') ?? '' }
+          })
+          if (!r.ok) break
+          const j = (await r.json()) as { data?: { value?: number }[]; hasMore?: boolean }
+          for (const it of j.data ?? []) revenue += Number(it.value ?? 0)
+          if (!j.hasMore || (j.data ?? []).length < limit) break
+          offset += limit
+        }
+      } catch {
+        /* sem Asaas configurado: revenue fica 0 */
       }
-      return json({ revenue: revenue / 100, currency, totalAccounts: totalAccounts ?? 0, activePaid, permanent, trialing })
+
+      return json({
+        revenue: revenue,
+        currency: 'BRL',
+        totalAccounts: totalAccounts ?? 0,
+        activePaid,
+        permanent,
+        trialing
+      })
     }
 
     if (action === 'list') {
       const { data: subs } = await admin
         .from('subscriptions')
-        .select('user_id,status,price_id,stripe_subscription_id,current_period_end')
+        .select('user_id,status,price_id,asaas_subscription_id,current_period_end')
       const { data: profs } = await admin.from('profiles').select('id,email,full_name,trial_ends_at,created_at')
       const pmap = new Map((profs ?? []).map((p2) => [p2.id, p2]))
       const rows = (subs ?? []).map((s) => {
@@ -75,7 +91,7 @@ Deno.serve(async (req: any) => {
           name: pr?.full_name ?? null,
           status: s.status,
           price_id: s.price_id,
-          paid: !!s.stripe_subscription_id,
+          paid: !!s.asaas_subscription_id,
           current_period_end: s.current_period_end,
           trial_ends_at: pr?.trial_ends_at ?? null
         }
@@ -104,12 +120,13 @@ Deno.serve(async (req: any) => {
       if (!prof) return json({ error: 'usuário não encontrado' }, 404)
       const { data: sub } = await admin
         .from('subscriptions')
-        .select('stripe_subscription_id')
+        .select('asaas_subscription_id')
         .eq('user_id', prof.id)
         .maybeSingle()
-      if (sub?.stripe_subscription_id) {
+      if (sub?.asaas_subscription_id) {
         try {
-          await stripe.subscriptions.cancel(sub.stripe_subscription_id)
+          // Asaas: cancelar via DELETE /subscriptions/{id}
+          await asaas(`/subscriptions/${sub.asaas_subscription_id}`, { method: 'DELETE' })
         } catch {
           /* já cancelada */
         }
@@ -131,3 +148,4 @@ Deno.serve(async (req: any) => {
     return json({ error: String((e as Error)?.message ?? e) }, 500)
   }
 })
+

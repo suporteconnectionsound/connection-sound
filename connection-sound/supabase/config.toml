@@ -1,7 +1,7 @@
 project_id = "vypzcjdjelsgbhlsvvpn"
 
-# O webhook da Stripe não envia JWT do Supabase — desliga a verificação só nele.
-[functions.stripe-webhook]
+# Webhook do Asaas não envia JWT do Supabase — desliga a verificação só nele.
+[functions.asaas-webhook]
 verify_jwt = false
 
 # O cron chama a função sem JWT do Supabase; ela se protege com o header x-cron-secret.

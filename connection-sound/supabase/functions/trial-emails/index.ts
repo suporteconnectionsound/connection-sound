@@ -6,9 +6,12 @@ const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE
 const RESEND = Deno.env.get('RESEND_API_KEY') ?? ''
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 const OWNER_EMAIL = Deno.env.get('OWNER_NOTIFY_EMAIL') ?? 'davidlindoso43@gmail.com'
-const LOGO = Deno.env.get('BRAND_LOGO_URL') ?? 'https://vypzcjdjelsgbhlsvvpn.supabase.co/storage/v1/object/public/brand/logo.png'
-const PAY_MONTHLY = Deno.env.get('PAY_LINK_MONTHLY') ?? 'https://buy.stripe.com/dRm5kDaG45yggCCd9u0ZW00'
-const PAY_YEARLY = Deno.env.get('PAY_LINK_YEARLY') ?? 'https://buy.stripe.com/28EbJ1cOc6Ck0DEfhC0ZW01'
+const LOGO = Deno.env.get('BRAND_LOGO_URL') ?? 'https://uirwbnwvutvqdpcevjge.supabase.co/storage/v1/object/public/brand/logo.png'
+// Antes: links Stripe (PAY_LINK_MONTHLY/YEARLY). Agora o Asaas gera o checkout
+// dentro do app — basta apontar para a landing page onde o usuário baixa o app e
+// o Paywall aparece com as opções PIX/Cartão.
+const PAY_MONTHLY = Deno.env.get('PAY_LINK_MONTHLY') ?? 'https://connectionsound.com/?pay=month'
+const PAY_YEARLY = Deno.env.get('PAY_LINK_YEARLY') ?? 'https://connectionsound.com/?pay=year'
 const SUPORTE_WHATS = 'https://wa.me/5561992437695'
 const SUPORTE_MAIL = 'suporteconnectionsound@gmail.com'
 

@@ -295,6 +295,7 @@ button{font-family:inherit}
 .authmsg{width:100%;font-size:12.5px;border-radius:9px;padding:9px 11px;line-height:1.4}
 .authmsg.err{background:var(--redT);color:#f0b3ae}
 .authmsg.info{background:rgba(91,155,240,.12);color:#a9c8f2}
+.authmsg.ok{background:rgba(91,200,140,.12);color:#9ce0bf}
 .authtoggle{font-size:12.5px;color:var(--txt2)}
 .authtoggle span{color:var(--acc);cursor:pointer;font-weight:500}
 .authtoggle span:hover{text-decoration:underline}
@@ -325,6 +326,13 @@ button{font-family:inherit}
 .pwfoot{display:flex;gap:22px;font-size:12.5px;color:var(--txt3)}
 .pwfoot span{display:flex;align-items:center;gap:6px;cursor:pointer}
 .pwfoot span:hover{color:var(--txt)}
+.pixbox{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px;border:1px solid var(--bd);border-radius:14px;background:rgba(255,255,255,.02);max-width:380px;margin:0 auto}
+.pixtitle{font-weight:600;font-size:14px;color:var(--txt)}
+.pixqr{background:#fff;padding:8px;border-radius:10px;width:200px;height:200px}
+.pixtimer{font-size:12px;color:var(--txt3);display:flex;align-items:center}
+.pixcopy{width:100%;display:flex;flex-direction:column;gap:8px}
+.pixcopy code{display:block;font-size:11px;color:var(--txt3);background:rgba(0,0,0,.3);padding:8px;border-radius:8px;word-break:break-all;max-height:64px;overflow:auto;font-family:'JetBrains Mono',Consolas,monospace}
+.pixcopy .dzbtn{align-self:flex-start;font-size:12px;padding:7px 12px}
 
 /* Forma de pagamento (Cartão / Pix) */
 .pwmethod{display:flex;gap:10px}

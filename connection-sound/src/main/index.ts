@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell, dialog, protocol } from 'electron'
 import { join, dirname, basename, extname } from 'path'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, statSync } from 'fs'
 import { readFile } from 'fs/promises'
 import { DownloadService, type EnqueuePayload } from './services/downloadService'
 import { MediaService } from './services/mediaService'
@@ -48,7 +48,23 @@ function createWindow(): void {
   })
   mainWindow = win
 
-  win.on('ready-to-show', () => win.show())
+  // Bug fix: antes a janela só abria de verdade no ready-to-show, que em alguns sistemas
+  // dispara antes do React pintar conteúdo (ou nunca dispara direito). Resultado: a
+  // primeira abertura ficava em tela vazia até o usuário fechar e abrir de novo.
+  // Estratégia: mostrar assim que o conteúdo terminar de carregar (did-finish-load),
+  // com um fallback de segurança em ready-to-show e um timeout curto pra não prender.
+  let firstShown = false
+  const showNow = (): void => {
+    if (firstShown || win.isDestroyed()) return
+    firstShown = true
+    if (!win.isVisible()) win.show()
+    win.focus()
+  }
+  win.webContents.on('did-finish-load', showNow)
+  win.once('ready-to-show', showNow)
+  // Fallback duro: se nenhum evento disparar em 1.5s, mostra assim mesmo.
+  setTimeout(showNow, 1500)
+
   win.on('closed', () => {
     mainWindow = null
   })
@@ -148,6 +164,19 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('file:read', (_e, p: string) => readFileSync(p))
+  ipcMain.handle('file:stat', (_e, paths: unknown) => {
+    if (!Array.isArray(paths)) return [] as { path: string; size: number }[]
+    const out: { path: string; size: number }[] = []
+    for (const p of paths) {
+      if (typeof p !== 'string') continue
+      try {
+        out.push({ path: p, size: statSync(p).size })
+      } catch {
+        out.push({ path: p, size: 0 })
+      }
+    }
+    return out
+  })
   ipcMain.handle('bg:save', (_e, d: { src: string; bytes: Uint8Array }) => {
     const out = join(dirname(d.src), `${basename(d.src, extname(d.src))} (sem fundo).png`)
     writeFileSync(out, Buffer.from(d.bytes))

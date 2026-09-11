@@ -14,6 +14,7 @@ declare global {
       showItem: (p: string) => void
       getPathForFile: (file: File) => string
       pickFiles: (filters?: { name: string; extensions: string[] }[]) => Promise<string[]>
+      statFiles: (paths: string[]) => Promise<{ path: string; size: number }[]>
       readFile: (path: string) => Promise<Uint8Array>
       bgSave: (src: string, bytes: Uint8Array) => Promise<string>
       openCheckout: (url: string) => Promise<string>

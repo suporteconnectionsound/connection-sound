@@ -1,32 +1,74 @@
 import { supabase } from './supabase'
 
 export type CheckoutResult = 'success' | 'cancel' | 'closed' | 'error'
-export type PayMethod = 'card' | 'boleto'
+export type PayMethod = 'pix' | 'card'
 
-/** Cria a sessão de checkout (Edge Function) e abre o pagamento numa janela embutida.
- *  method 'card' = assinatura recorrente; method 'boleto' = pagamento único (libera N dias). */
-export async function startCheckout(plan: 'month' | 'year', method: PayMethod = 'card'): Promise<CheckoutResult> {
+export interface PixData {
+  type: 'pix'
+  paymentId: string
+  brCode: string
+  qrCodeBase64: string
+  expiresAt: string | null
+  invoiceUrl: string | null
+  amount: number
+  plan: 'month' | 'year'
+}
+
+export interface CardData {
+  type: 'card'
+  checkoutId: string
+  checkoutUrl: string
+  amount: number
+  cycle: 'MONTHLY' | 'YEARLY'
+  plan: 'month' | 'year'
+}
+
+/** Cria um pagamento PIX avulso (libera N dias) e devolve QR + copia-e-cola.
+ *  O app mostra o QR e faz polling em asaas-check-payment até confirmar. */
+export async function startPix(plan: 'month' | 'year'): Promise<PixData | null> {
   try {
-    let body: Record<string, unknown>
-    if (method === 'boleto') {
-      body = { method: 'boleto', plan }
-    } else {
-      const priceId =
-        plan === 'year' ? import.meta.env.VITE_STRIPE_PRICE_YEARLY : import.meta.env.VITE_STRIPE_PRICE_MONTHLY
-      body = { priceId }
-    }
-    // Trava de tempo: se a função demorar demais (rede/cold start), não prende o botão.
-    const timeout = new Promise<{ data: null; error: string }>((res) =>
-      setTimeout(() => res({ data: null, error: 'timeout' }), 20000)
-    )
-    const invoke = supabase.functions.invoke('create-checkout', { body })
-    const { data, error } = (await Promise.race([invoke, timeout])) as {
-      data: { url?: string } | null
-      error: unknown
-    }
-    if (error || !data?.url) return 'error'
-    const result = await window.cs.openCheckout(data.url as string)
-    return (result as CheckoutResult) ?? 'error'
+    const timeout = new Promise<null>((res) => setTimeout(() => res(null), 20000))
+    const invoke = supabase.functions.invoke('asaas-create-checkout', {
+      body: { method: 'pix', plan }
+    }) as PromiseLike<{ data: PixData | null }>
+    const r = (await Promise.race([invoke, timeout])) as { data: PixData | null } | null
+    return r?.data ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Cria uma assinatura cartão recorrente e devolve a URL de checkout hospedado Asaas.
+ *  O app abre a URL numa janela embutida; o Asaas cuida do cartão e o webhook libera. */
+export async function startCard(plan: 'month' | 'year'): Promise<CardData | null> {
+  try {
+    const timeout = new Promise<null>((res) => setTimeout(() => res(null), 20000))
+    const invoke = supabase.functions.invoke('asaas-create-checkout', {
+      body: { method: 'card', plan }
+    }) as PromiseLike<{ data: CardData | null }>
+    const r = (await Promise.race([invoke, timeout])) as { data: CardData | null } | null
+    return r?.data ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Confere o status de um pagamento PIX no Asaas (polling). */
+export async function checkPayment(paymentId: string): Promise<{ status: string } | null> {
+  try {
+    const r = await supabase.functions.invoke('asaas-check-payment', { body: { paymentId } })
+    if (r.error || !r.data) return null
+    return r.data as { status: string }
+  } catch {
+    return null
+  }
+}
+
+/** Abre o checkout hospedado Asaas (cartão) numa janela embutida. */
+export async function openCardCheckout(url: string): Promise<CheckoutResult> {
+  try {
+    const result = await window.cs.openCheckout(url)
+    return (result as CheckoutResult) ?? 'closed'
   } catch {
     return 'error'
   }

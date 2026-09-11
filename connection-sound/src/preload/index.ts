@@ -10,6 +10,8 @@ const api = {
   getPathForFile: (file: File): string => webUtils.getPathForFile(file),
   pickFiles: (filters?: { name: string; extensions: string[] }[]): Promise<string[]> =>
     ipcRenderer.invoke('dialog:pickFiles', filters),
+  statFiles: (paths: string[]): Promise<{ path: string; size: number }[]> =>
+    ipcRenderer.invoke('file:stat', paths),
   readFile: (path: string): Promise<Uint8Array> => ipcRenderer.invoke('file:read', path),
   bgSave: (src: string, bytes: Uint8Array): Promise<string> => ipcRenderer.invoke('bg:save', { src, bytes }),
   openCheckout: (url: string): Promise<string> => ipcRenderer.invoke('billing:checkout', url),
